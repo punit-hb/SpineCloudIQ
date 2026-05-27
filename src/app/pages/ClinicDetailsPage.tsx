@@ -591,12 +591,12 @@ export default function ClinicDetailsPage() {
                   <table className="w-full">
                     <thead className="bg-muted">
                       <tr>
-                        <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase">Transaction</th>
-                        <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase">Date</th>
-                        <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase">Amount</th>
-                        <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase">Method</th>
-                        <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase">Status</th>
-                        <th className="text-left px-5 py-3 text-xs font-semibold text-muted-foreground uppercase">Invoice</th>
+                        <th className="text-left px-5 py-3 text-sm font-semibold text-muted-foreground">Transaction</th>
+                        <th className="text-left px-5 py-3 text-sm font-semibold text-muted-foreground">Date</th>
+                        <th className="text-left px-5 py-3 text-sm font-semibold text-muted-foreground">Amount</th>
+                        <th className="text-left px-5 py-3 text-sm font-semibold text-muted-foreground">Method</th>
+                        <th className="text-left px-5 py-3 text-sm font-semibold text-muted-foreground">Status</th>
+                        <th className="text-left px-5 py-3 text-sm font-semibold text-muted-foreground">Invoice</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">

@@ -125,24 +125,24 @@ export default function DashboardLayout() {
   };
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
+    <div className="clinic-admin-shell flex h-screen bg-background overflow-hidden">
       {/* Sidebar */}
-      <aside className={`bg-card border-r border-border flex flex-col transition-all duration-300 ${sidebarCollapsed ? 'w-16' : 'w-64'}`}>
+      <aside className={`bg-white dark:bg-neutral-950 border-r border-neutral-200 dark:border-neutral-800 flex flex-col transition-all duration-300 ${sidebarCollapsed ? 'w-[64px]' : 'w-[256px]'}`}>
         {/* Logo */}
-        <div className={`border-b border-border flex items-center ${sidebarCollapsed ? 'p-4 justify-center' : 'p-5 gap-2.5'}`}>
+        <div className={`h-[48px] border-b border-neutral-200 dark:border-neutral-800 flex items-center ${sidebarCollapsed ? 'px-3 justify-center' : 'px-3 gap-2.5'}`}>
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
             <Activity className="w-4 h-4 text-white" strokeWidth={2.5} />
           </div>
           {!sidebarCollapsed && (
             <div className="overflow-hidden">
-              <h1 className="text-sm font-semibold text-foreground">SpineCloudIQ</h1>
-              <p className="text-xs text-muted-foreground">Super Admin</p>
+              <h1 className="text-sm font-semibold leading-5 text-neutral-900 dark:text-white">SpineCloudIQ</h1>
+              <p className="text-[11px] leading-4 text-neutral-500 dark:text-neutral-400">Super Admin</p>
             </div>
           )}
         </div>
 
         {/* Menu Items */}
-        <nav className={`flex-1 space-y-0.5 overflow-y-auto ${sidebarCollapsed ? 'p-2' : 'p-2.5'}`}>
+        <nav className={`slim-scroll flex-1 space-y-1 overflow-y-auto ${sidebarCollapsed ? 'p-2' : 'p-2'}`}>
           {menuItems.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.path);
@@ -168,19 +168,19 @@ export default function DashboardLayout() {
                       navigate(item.path);
                     }
                   }}
-                  className={`w-full flex items-center rounded-lg transition-all text-sm ${
-                    sidebarCollapsed ? 'justify-center p-2.5' : 'gap-2.5 px-2.5 py-2'
+                  className={`w-full flex items-center rounded-lg transition-colors text-sm ${
+                    sidebarCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-2.5 px-3 py-2'
                   } ${
                     active
-                      ? "bg-primary text-white"
-                      : "text-foreground hover:bg-muted"
+                      ? "bg-primary/10 text-primary"
+                      : "text-neutral-700 hover:bg-neutral-50 hover:text-neutral-950 dark:text-neutral-300 dark:hover:bg-neutral-900 dark:hover:text-white"
                   }`}
                   title={sidebarCollapsed ? item.label : undefined}
                 >
-                  <Icon className="w-4 h-4 shrink-0" strokeWidth={2} />
+                    <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
                   {!sidebarCollapsed && (
                     <>
-                      <span className="font-medium flex-1 text-left text-xs">{item.label}</span>
+                      <span className="flex-1 truncate text-left text-sm font-medium leading-5">{item.label}</span>
                       {hasSubmenu && (
                         <ChevronDown 
                           className={`w-3 h-3 transition-transform shrink-0 ${isExpanded ? 'rotate-180' : ''}`}
@@ -198,10 +198,10 @@ export default function DashboardLayout() {
                         <button
                           key={subItem.path}
                           onClick={() => navigate(subItem.path)}
-                          className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs transition-all ${
+                          className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-sm font-medium transition-colors ${
                             subActive
-                              ? "text-foreground font-semibold"
-                              : "text-muted-foreground hover:text-foreground"
+                              ? "bg-primary/10 text-primary font-semibold"
+                              : "text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-900 dark:hover:text-white"
                           }`}
                         >
                           <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
@@ -219,16 +219,16 @@ export default function DashboardLayout() {
         </nav>
 
         {/* Logout */}
-        <div className={`border-t border-border ${sidebarCollapsed ? 'p-2' : 'p-2.5'}`}>
+        <div className={`border-t border-neutral-200 dark:border-neutral-800 ${sidebarCollapsed ? 'p-2' : 'p-2'}`}>
           <button
             onClick={handleLogout}
-            className={`w-full flex items-center rounded-lg text-foreground hover:bg-muted transition-all text-sm ${
-              sidebarCollapsed ? 'justify-center p-2.5' : 'gap-2.5 px-2.5 py-2'
+            className={`w-full flex items-center rounded-lg text-neutral-700 hover:bg-neutral-50 hover:text-neutral-950 transition-colors dark:text-neutral-300 dark:hover:bg-neutral-900 dark:hover:text-white ${
+              sidebarCollapsed ? 'justify-center h-10 w-10 mx-auto' : 'gap-2.5 px-3 py-2'
             }`}
             title={sidebarCollapsed ? "Logout" : undefined}
           >
-            <LogOut className="w-4 h-4 shrink-0" strokeWidth={2} />
-            {!sidebarCollapsed && <span className="font-medium text-xs">Logout</span>}
+            <LogOut className="h-[18px] w-[18px] shrink-0" strokeWidth={2} />
+            {!sidebarCollapsed && <span className="text-sm font-medium leading-5">Logout</span>}
           </button>
         </div>
       </aside>
@@ -236,7 +236,7 @@ export default function DashboardLayout() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Header */}
-        <header className="h-12 bg-card border-b border-border px-4 flex items-center justify-between">
+        <header className="h-[48px] bg-white dark:bg-neutral-950 border-b border-neutral-200 dark:border-neutral-800 px-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             {/* Sidebar Toggle */}
             <Button 
@@ -274,7 +274,7 @@ export default function DashboardLayout() {
                       <span className="font-semibold text-sm">Notifications</span>
                       <button className="text-xs text-primary hover:underline font-medium">Read All</button>
                     </div>
-                    <div className="max-h-64 overflow-y-auto">
+                    <div className="slim-scroll max-h-64 overflow-y-auto">
                       <div className="p-4 text-center text-sm text-muted-foreground">
                         No new notifications
                       </div>
@@ -424,9 +424,17 @@ export default function DashboardLayout() {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-auto p-6">
+        <main className="clinic-admin-content slim-scroll flex-1 overflow-y-auto overflow-x-hidden p-5 md:p-6">
           <Outlet />
         </main>
+        <footer className="clinic-admin-footer h-8 shrink-0 border-t border-neutral-200 bg-white px-4 text-xs text-neutral-500 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-400">
+          <div className="flex h-full items-center justify-between">
+            <span>© SpineCloudIQ</span>
+            <a href="https://www.hiddenbrains.com" target="_blank" rel="noreferrer" className="font-medium text-neutral-600 hover:text-primary dark:text-neutral-300 dark:hover:text-primary">
+              Designed and developed by HiddenBrains.com
+            </a>
+          </div>
+        </footer>
       </div>
     </div>
   );

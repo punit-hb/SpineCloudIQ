@@ -84,12 +84,8 @@ export default function SubscriptionManagementPage() {
     <div className="h-full flex flex-col space-y-6">
       {/* Page Header */}
       <div>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground uppercase tracking-wider mb-1">
-          <span>Subscriptions</span><span>/</span>
-          <span className="text-foreground font-medium">Plan Management</span>
-        </div>
         <h1 className="text-3xl font-bold tracking-tight text-foreground">Subscription Plans</h1>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="text-sm text-muted-foreground mt-2">
           Review available subscription tiers, pricing structure, included features, and active subscriber counts
         </p>
       </div>

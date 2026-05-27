@@ -27,12 +27,15 @@ export function Breadcrumb({ items }: { items: BreadcrumbItem[] }) {
 }
 
 // ── PageHeader ────────────────────────────────────────────
-export function PageHeader({ title, breadcrumbs, children }: { title: string; breadcrumbs?: BreadcrumbItem[]; children?: React.ReactNode }) {
+export function PageHeader({ title, breadcrumbs, description, children }: { title: string; breadcrumbs?: BreadcrumbItem[]; description?: string; children?: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-3 pb-6">
-      {breadcrumbs && <Breadcrumb items={breadcrumbs} />}
+    <div className="flex flex-col gap-2 pb-6">
+      {breadcrumbs && breadcrumbs.length > 1 && <Breadcrumb items={breadcrumbs} />}
       <div className="flex items-center justify-between gap-4 flex-wrap">
-        <h1>{title}</h1>
+        <div>
+          <h1>{title}</h1>
+          {description && <p className="mt-2 text-sm font-normal text-neutral-500 dark:text-neutral-400">{description}</p>}
+        </div>
         {children && <div className="flex items-center gap-2 flex-wrap">{children}</div>}
       </div>
     </div>
@@ -132,7 +135,7 @@ export function ViewModeSwitcher({ value, currentMode, onChange }: { value?: str
   return (
     <div className="flex items-center h-10 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden bg-white dark:bg-neutral-950">
       {modes.map(({ id, Icon, label }) => (
-        <button key={id} onClick={() => onChange(id)} title={`${label} View`} className={`w-10 h-10 flex items-center justify-center transition-colors ${mode === id ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-white' : 'text-neutral-500 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-900'}`}>
+        <button key={id} onClick={() => onChange(id)} title={`${label} View`} className={`w-10 h-10 flex items-center justify-center transition-colors ${mode === id ? 'bg-primary-50 dark:bg-primary-950 text-primary-600 dark:text-primary-400' : 'text-neutral-500 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-900'}`}>
           <Icon className="w-4 h-4" />
         </button>
       ))}
@@ -186,7 +189,7 @@ export function FilterPopup({ isOpen, onClose, filters, onFiltersChange, filterO
           <h3 className="text-sm font-semibold text-neutral-900 dark:text-white">Advanced Filters</h3>
           {filters.length > 0 && <button onClick={() => onFiltersChange([])} className="text-xs text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200">Clear All</button>}
         </div>
-        <div className="space-y-4 max-h-80 overflow-y-auto">
+        <div className="slim-scroll space-y-4 max-h-80 overflow-y-auto">
           {Object.entries(filterOptions).map(([field, values]) => {
             const existing = filters.find(f => f.field === field);
             return (

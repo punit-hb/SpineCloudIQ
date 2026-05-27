@@ -100,14 +100,9 @@ export default function DashboardHome() {
       {/* ── Page Header ─────────────────────────────────────────── */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground uppercase tracking-wider mb-1">
-            <span>Home</span>
-            <span>/</span>
-            <span className="text-foreground font-medium">Dashboard</span>
-          </div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Overview</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Welcome back, Super Admin — here's a snapshot of the platform health today.
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
+          <p className="text-sm text-muted-foreground mt-2">
+            Platform overview, analytics, and operational insights.
           </p>
         </div>
       </div>

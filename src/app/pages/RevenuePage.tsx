@@ -1,21 +1,18 @@
 import { type ComponentType, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
+  ArrowUpDown,
   BarChart3,
   Check,
-  ChevronDown,
   Download,
   FileSpreadsheet,
   FileText,
   Filter,
-  Grid3X3,
-  List,
   MoreVertical,
   Printer,
   RefreshCw,
   Search,
   SlidersHorizontal,
-  Table2,
   TrendingUp,
   X,
 } from "lucide-react";
@@ -96,34 +93,6 @@ function HeaderIconButton({
     >
       <Icon className="h-5 w-5" />
     </button>
-  );
-}
-
-function ViewModeSwitcher({ viewMode, onChange }: { viewMode: ViewMode; onChange: (mode: ViewMode) => void }) {
-  const items: { id: ViewMode; icon: ComponentType<{ className?: string }>; title: string }[] = [
-    { id: "grid", icon: Grid3X3, title: "Grid View" },
-    { id: "list", icon: List, title: "List View" },
-    { id: "table", icon: Table2, title: "Table View" },
-  ];
-
-  return (
-    <div className="flex h-10 overflow-hidden rounded-lg border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
-      {items.map(({ id, icon: Icon, title }) => (
-        <button
-          key={id}
-          type="button"
-          title={title}
-          onClick={() => onChange(id)}
-          className={`flex h-10 w-10 items-center justify-center transition-colors ${
-            viewMode === id
-              ? "bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-white"
-              : "text-neutral-500 hover:bg-neutral-50 dark:text-neutral-400 dark:hover:bg-neutral-900"
-          }`}
-        >
-          <Icon className="h-4 w-4" />
-        </button>
-      ))}
-    </div>
   );
 }
 
@@ -409,13 +378,15 @@ export default function RevenuePage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [showSummary, setShowSummary] = useState(true);
   const [selectedRowIds, setSelectedRowIds] = useState<number[]>([]);
-  const [viewMode, setViewMode] = useState<ViewMode>("table");
+  const [viewMode] = useState<ViewMode>("table");
   const [showFilters, setShowFilters] = useState(false);
   const [showColumns, setShowColumns] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(
     Object.fromEntries(tableColumns.map((column) => [column.key, true]))
   );
+  const [sortField, setSortField] = useState<ColumnConfig["key"]>("month");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const columnsRef = useRef<HTMLDivElement>(null);
   const moreRef = useRef<HTMLDivElement>(null);
 
@@ -449,8 +420,30 @@ export default function RevenuePage() {
     });
   }, [growthRange.max, growthRange.min, revenueRange.max, revenueRange.min, searchQuery]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredData.length / ITEMS_PER_PAGE));
-  const currentData = filteredData.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  const sortedData = useMemo(() => {
+    const getSortValue = (item: RevenueRecord, field: ColumnConfig["key"]) => {
+      if (field === "totalRevenue") return item.rawRevenue;
+      if (field === "netGrowth") return item.rawGrowth;
+      if (["newRevenue", "churnRevenue", "growthRate"].includes(field)) {
+        return Number(String(item[field]).replace(/[$,%+]/g, ""));
+      }
+      if (field === "month") return new Date(item.month).getTime();
+      return item[field];
+    };
+
+    return [...filteredData].sort((first, second) => {
+      const firstValue = getSortValue(first, sortField);
+      const secondValue = getSortValue(second, sortField);
+      const result =
+        typeof firstValue === "number" && typeof secondValue === "number"
+          ? firstValue - secondValue
+          : String(firstValue).localeCompare(String(secondValue), undefined, { numeric: true, sensitivity: "base" });
+      return sortDirection === "asc" ? result : -result;
+    });
+  }, [filteredData, sortDirection, sortField]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedData.length / ITEMS_PER_PAGE));
+  const currentData = sortedData.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -488,6 +481,20 @@ export default function RevenuePage() {
   const toggleColumn = (key: string) => {
     setVisibleColumns((prev) => ({ ...prev, [key]: !prev[key] }));
   };
+
+  const handleSort = (field: ColumnConfig["key"]) => {
+    setCurrentPage(1);
+    if (sortField === field) {
+      setSortDirection((direction) => (direction === "asc" ? "desc" : "asc"));
+      return;
+    }
+    setSortField(field);
+    setSortDirection("asc");
+  };
+
+  const getSortIcon = (field: ColumnConfig["key"]) => (
+    <ArrowUpDown className={`h-3.5 w-3.5 ${sortField === field ? "text-primary" : "text-neutral-400"}`} />
+  );
 
   const visibleColumnCount = tableColumns.filter((column) => visibleColumns[column.key]).length;
 
@@ -558,14 +565,9 @@ export default function RevenuePage() {
         <div className="mb-6">
           <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <h1 className="mb-1 text-[32px] font-semibold leading-[40px] text-neutral-900 dark:text-white">
+              <h1 className="mb-2 text-[32px] font-semibold leading-[40px] text-neutral-900 dark:text-white">
                 Revenue Analytics
               </h1>
-              <nav className="mb-2 flex items-center gap-1 text-sm">
-                <span className="text-neutral-500 dark:text-neutral-400">Finance</span>
-                <ChevronDown className="h-3.5 w-3.5 -rotate-90 text-neutral-400" />
-                <span className="font-medium text-neutral-900 dark:text-white">Revenue Analytics</span>
-              </nav>
               <p className="text-sm text-neutral-600 dark:text-neutral-400">
                 Track monthly recurring revenue, net growth, and churn metrics across all subscription tiers.
               </p>
@@ -704,7 +706,6 @@ export default function RevenuePage() {
                 )}
               </div>
 
-              <ViewModeSwitcher viewMode={viewMode} onChange={setViewMode} />
             </div>
           </div>
         </div>
@@ -731,23 +732,28 @@ export default function RevenuePage() {
         )}
 
         {viewMode === "grid" && (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             {currentData.length > 0
               ? currentData.map((item) => {
                   const selected = selectedRowIds.includes(item.id);
                   return (
                     <div
                       key={item.id}
-                      className={`rounded-lg border bg-white p-5 shadow-sm transition-colors dark:bg-neutral-950 ${
+                      className={`flex min-h-[236px] flex-col rounded-lg border bg-white p-4 shadow-sm transition-colors dark:bg-neutral-950 ${
                         selected ? "border-primary/50 bg-primary/5" : "border-neutral-200 dark:border-neutral-800"
                       }`}
                     >
                       <div className="mb-4 flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold text-neutral-900 dark:text-white">{item.month}</p>
+                        <div className="flex min-w-0 items-start gap-3">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-neutral-100 text-primary dark:bg-neutral-900">
+                            <TrendingUp className="h-4 w-4" />
+                          </div>
+                          <div className="min-w-0">
+                          <p className="truncate text-base font-semibold text-neutral-900 dark:text-white">{item.month}</p>
                           <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
                             {item.subscriptions.toLocaleString()} subscriptions
                           </p>
+                          </div>
                         </div>
                         <input
                           type="checkbox"
@@ -757,7 +763,7 @@ export default function RevenuePage() {
                           title="Select"
                         />
                       </div>
-                      <div className="space-y-2 text-sm">
+                      <div className="flex-1 space-y-2.5 text-sm">
                         <div className="flex items-center justify-between gap-3">
                           <span className="text-neutral-500 dark:text-neutral-400">Total Revenue</span>
                           <span className="font-semibold text-neutral-900 dark:text-white">{item.totalRevenue}</span>
@@ -770,15 +776,19 @@ export default function RevenuePage() {
                           <span className="text-neutral-500 dark:text-neutral-400">Churn Revenue</span>
                           <RevenuePill tone="negative">{item.churnRevenue}</RevenuePill>
                         </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-neutral-500 dark:text-neutral-400">Net Growth</span>
+                          <span className="font-semibold text-neutral-900 dark:text-white">{item.netGrowth}</span>
+                        </div>
                       </div>
-                      <div className="mt-4 flex items-center justify-between border-t border-neutral-100 pt-3 dark:border-neutral-800">
-                        <span className="text-sm font-semibold text-neutral-900 dark:text-white">{item.netGrowth}</span>
+                      <div className="mt-4 flex min-h-10 items-center justify-between border-t border-neutral-100 pt-3 dark:border-neutral-800">
+                        <span className="text-sm text-neutral-500 dark:text-neutral-400">Growth</span>
                         <GrowthBadge value={item.growthRate} />
                       </div>
                     </div>
                   );
                 })
-              : <div className="md:col-span-2 xl:col-span-3">{emptyState}</div>}
+              : <div className="md:col-span-2 xl:col-span-4">{emptyState}</div>}
           </div>
         )}
 
@@ -845,11 +855,19 @@ export default function RevenuePage() {
                       visibleColumns[column.key] ? (
                         <th
                           key={column.key}
-                          className={`sticky top-0 z-10 border-b border-neutral-200 bg-neutral-50 px-6 py-3.5 text-xs font-semibold tracking-normal text-neutral-700 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300 ${
+                          className={`sticky top-0 z-10 border-b border-neutral-200 bg-neutral-50 px-6 py-3.5 text-sm font-semibold tracking-normal text-neutral-700 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300 ${
                             column.align === "right" ? "text-right" : ""
                           }`}
                         >
-                          {column.label}
+                          <button
+                            type="button"
+                            onClick={() => handleSort(column.key)}
+                            className={`whitespace-nowrap ${column.align === "right" ? "ml-auto" : ""}`}
+                            aria-label={`Sort by ${column.label}`}
+                          >
+                            {column.label}
+                            {getSortIcon(column.key)}
+                          </button>
                         </th>
                       ) : null
                     )}

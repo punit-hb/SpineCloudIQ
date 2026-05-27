@@ -1,6 +1,6 @@
 import { type ComponentType, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
-import { AlertCircle, BarChart3, Check, Code2, Columns3, Download, Edit2, FileText, Filter, Grid3X3, List, Mail, MoreVertical, Plus, Printer, RefreshCw, Search, Table2, Upload, X } from "lucide-react";
+import { AlertCircle, ArrowUpDown, BarChart3, Check, Code2, Columns3, Download, Edit2, FileText, Filter, Mail, MoreVertical, Plus, Printer, RefreshCw, Search, Upload, X } from "lucide-react";
 
 interface EmailTemplate {
   id: string;
@@ -12,7 +12,7 @@ interface EmailTemplate {
   lastModified: string;
 }
 
-type ViewMode = "grid" | "list" | "table";
+type ViewMode = "table";
 type ColumnKey = "template" | "subject" | "variables" | "lastModified";
 
 const ITEMS_PER_PAGE = 10;
@@ -43,19 +43,6 @@ function HeaderIconButton({ title, icon: Icon, active, badge, onClick }: { title
       <Icon className="h-4 w-4" />
       {badge ? <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-white">{badge}</span> : null}
     </button>
-  );
-}
-
-function ViewModeSwitcher({ value, onChange }: { value: ViewMode; onChange: (value: ViewMode) => void }) {
-  const modes: Array<{ value: ViewMode; title: string; icon: ComponentType<{ className?: string }> }> = [
-    { value: "grid", title: "Grid View", icon: Grid3X3 },
-    { value: "list", title: "List View", icon: List },
-    { value: "table", title: "Table View", icon: Table2 },
-  ];
-  return (
-    <div className="inline-flex h-10 items-center gap-1 rounded-lg border border-neutral-200 bg-neutral-50 p-1 dark:border-neutral-800 dark:bg-neutral-900">
-      {modes.map(({ value: mode, title, icon: Icon }) => <button key={mode} type="button" title={title} onClick={() => onChange(mode)} className={`inline-flex h-8 w-8 items-center justify-center rounded-md ${value === mode ? "border border-neutral-200 bg-white text-primary shadow-sm dark:border-neutral-800 dark:bg-neutral-950" : "text-neutral-500 hover:bg-white dark:text-neutral-400 dark:hover:bg-neutral-950"}`}><Icon className="h-4 w-4" /></button>)}
-    </div>
   );
 }
 
@@ -94,12 +81,13 @@ function FilterPanel({ draftRows, setDraftRows, dateRange, setDateRange, onClear
 
 export default function EmailManagementPage() {
   const navigate = useNavigate();
-  const [viewMode, setViewMode] = useState<ViewMode>("table");
+  const [viewMode] = useState<ViewMode>("table");
   const [showSummary, setShowSummary] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [showColumnPanel, setShowColumnPanel] = useState(false);
   const [showFilterPanel, setShowFilterPanel] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [activeMenuRowId, setActiveMenuRowId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [dateRange, setDateRange] = useState({ start: "", end: "" });
   const [draftRows, setDraftRows] = useState<string[]>([]);
@@ -107,6 +95,8 @@ export default function EmailManagementPage() {
   const [selectedRowIds, setSelectedRowIds] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [visibleColumns, setVisibleColumns] = useState<Record<ColumnKey, boolean>>({ template: true, subject: true, variables: true, lastModified: true });
+  const [sortField, setSortField] = useState<ColumnKey>("lastModified");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
   useEffect(() => {
     if (viewMode !== "table") setShowColumnPanel(false);
@@ -122,8 +112,22 @@ export default function EmailManagementPage() {
     });
   }, [dateRange.end, dateRange.start, searchTerm]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredTemplates.length / ITEMS_PER_PAGE));
-  const currentData = filteredTemplates.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  const sortedTemplates = useMemo(() => [...filteredTemplates].sort((first, second) => {
+    const getValue = (template: EmailTemplate) => {
+      if (sortField === "template") return template.name;
+      if (sortField === "variables") return template.variables.length;
+      return template[sortField];
+    };
+    const firstValue = getValue(first);
+    const secondValue = getValue(second);
+    const result = typeof firstValue === "number" && typeof secondValue === "number"
+      ? firstValue - secondValue
+      : String(firstValue).localeCompare(String(secondValue), undefined, { numeric: true, sensitivity: "base" });
+    return sortDirection === "asc" ? result : -result;
+  }), [filteredTemplates, sortDirection, sortField]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedTemplates.length / ITEMS_PER_PAGE));
+  const currentData = sortedTemplates.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
   const selectedOnPage = currentData.length > 0 && currentData.every((item) => selectedRowIds.includes(item.id));
   const activeFilterCount = dateRange.start || dateRange.end ? 1 : 0;
   const totalVariables = mockEmailTemplates.reduce((acc, template) => acc + template.variables.length, 0);
@@ -148,6 +152,16 @@ export default function EmailManagementPage() {
   };
 
   const toggleColumn = (key: ColumnKey) => setVisibleColumns((current) => current[key] && Object.values(current).filter(Boolean).length === 1 ? current : { ...current, [key]: !current[key] });
+  const handleSort = (field: ColumnKey) => {
+    setCurrentPage(1);
+    if (sortField === field) {
+      setSortDirection((direction) => (direction === "asc" ? "desc" : "asc"));
+      return;
+    }
+    setSortField(field);
+    setSortDirection("asc");
+  };
+  const getSortIcon = (field: ColumnKey) => <ArrowUpDown className={`h-3.5 w-3.5 ${sortField === field ? "text-primary" : "text-neutral-400"}`} />;
   const toggleSelected = (id: string, checked: boolean) => setSelectedRowIds((current) => checked ? Array.from(new Set([...current, id])) : current.filter((item) => item !== id));
   const handleExportExcel = () => alert(`Exporting ${filteredTemplates.length} email templates to Excel.`);
   const handleExportPdf = () => alert(`Exporting ${filteredTemplates.length} email templates to PDF.`);
@@ -157,13 +171,16 @@ export default function EmailManagementPage() {
   );
 
   const renderActions = (template: EmailTemplate) => (
-    <button type="button" onClick={(event) => { event.stopPropagation(); navigate(`/dashboard/emails/${template.id}`); }} className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-primary hover:bg-primary/10" title="Edit template"><Edit2 className="h-4 w-4" /></button>
+    <div className="relative inline-block text-left">
+      <button type="button" onClick={(event) => { event.stopPropagation(); setActiveMenuRowId(activeMenuRowId === template.id ? null : template.id); }} className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-900" title="Actions"><MoreVertical className="h-4 w-4" /></button>
+      {activeMenuRowId === template.id ? <><div className="fixed inset-0 z-30" onClick={() => setActiveMenuRowId(null)} /><div className="absolute right-0 top-9 z-40 w-44 overflow-hidden rounded-lg border border-neutral-200 bg-white py-1 shadow-lg dark:border-neutral-800 dark:bg-neutral-950"><button type="button" onClick={(event) => { event.stopPropagation(); setActiveMenuRowId(null); navigate(`/dashboard/emails/${template.id}`); }} className="flex h-9 w-full items-center gap-2 px-3 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-900"><Edit2 className="h-4 w-4 text-neutral-500" />Edit Template</button></div></> : null}
+    </div>
   );
 
   return (
     <div className="min-h-full bg-neutral-50 px-6 py-5 text-[14px] text-neutral-900 dark:bg-neutral-950 dark:text-white">
       <div className="mb-5 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-        <div><div className="mb-1 text-xs font-medium text-neutral-500">Communications <span className="mx-1 text-neutral-300">/</span> Email Management</div><h1 className="text-2xl font-semibold leading-8 text-neutral-950 dark:text-white">Email Templates</h1><p className="mt-1 max-w-2xl text-sm leading-5 text-neutral-500 dark:text-neutral-400">Manage and customize platform-wide transactional email templates sent to clinic administrators.</p></div>
+        <div><h1 className="text-2xl font-semibold leading-8 text-neutral-950 dark:text-white">Email Templates</h1><p className="mt-2 max-w-2xl text-sm leading-5 text-neutral-500 dark:text-neutral-400">Manage and customize platform-wide transactional email templates sent to clinic administrators.</p></div>
         <div className="flex flex-wrap items-center gap-2 xl:justify-end">
           {isSearchOpen ? <div className="relative flex h-10 min-w-[360px] items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 text-neutral-500 dark:border-neutral-800 dark:bg-neutral-950"><Search className="h-4 w-4 shrink-0" /><input autoFocus value={searchTerm} onChange={(event) => { setSearchTerm(event.target.value); setCurrentPage(1); }} placeholder="Search by template name, subject, or description..." className="h-full flex-1 bg-transparent text-sm text-neutral-900 outline-none placeholder:text-neutral-400 dark:text-white" /><button type="button" title="Filter By" onClick={openFilters} className="relative rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-900"><Filter className="h-4 w-4" />{activeFilterCount ? <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-white">{activeFilterCount}</span> : null}</button><button type="button" title="Close Search" onClick={() => setIsSearchOpen(false)} className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-900"><X className="h-4 w-4" /></button>{showFilterPanel ? <FilterPanel draftRows={draftRows} setDraftRows={setDraftRows} dateRange={draftDateRange} setDateRange={setDraftDateRange} onClear={clearFilters} onCancel={() => setShowFilterPanel(false)} onApply={applyFilters} /> : null}</div> : <HeaderIconButton title="Search" icon={Search} active={Boolean(searchTerm)} onClick={() => setIsSearchOpen(true)} />}
           {viewMode === "table" ? <div className="relative"><HeaderIconButton title="Customized columns" icon={Columns3} active={showColumnPanel || Object.values(visibleColumns).filter(Boolean).length < tableColumns.length} onClick={() => setShowColumnPanel((value) => !value)} />{showColumnPanel ? <ColumnPanel visibleColumns={visibleColumns} onToggle={toggleColumn} onClose={() => setShowColumnPanel(false)} /> : null}</div> : null}
@@ -171,7 +188,6 @@ export default function EmailManagementPage() {
           <HeaderIconButton title="Summary" icon={BarChart3} active={showSummary} onClick={() => setShowSummary((value) => !value)} />
           <HeaderIconButton title="Refresh" icon={RefreshCw} onClick={() => setCurrentPage(1)} />
           <div className="relative"><HeaderIconButton title="More options" icon={MoreVertical} active={showMoreMenu} onClick={() => setShowMoreMenu((value) => !value)} />{showMoreMenu ? <><div className="fixed inset-0 z-30" onClick={() => setShowMoreMenu(false)} /><div className="absolute right-0 top-12 z-40 w-44 overflow-hidden rounded-lg border border-neutral-200 bg-white py-1 shadow-lg dark:border-neutral-800 dark:bg-neutral-950"><button type="button" onClick={() => alert("Import templates is not available for this mock listing.")} className="flex h-9 w-full items-center gap-2 px-3 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-900"><Upload className="h-4 w-4 text-neutral-500" />Import</button><button type="button" onClick={handleExportExcel} className="flex h-9 w-full items-center gap-2 px-3 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-900"><FileText className="h-4 w-4 text-neutral-500" />Export</button><button type="button" onClick={() => window.print()} className="flex h-9 w-full items-center gap-2 px-3 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-900"><Printer className="h-4 w-4 text-neutral-500" />Print</button></div></> : null}</div>
-          <ViewModeSwitcher value={viewMode} onChange={setViewMode} />
         </div>
       </div>
 
@@ -181,12 +197,9 @@ export default function EmailManagementPage() {
 
       {filteredTemplates.length === 0 ? <div className="rounded-lg border border-neutral-200 bg-white p-8 text-center dark:border-neutral-800 dark:bg-neutral-950"><AlertCircle className="mx-auto h-10 w-10 text-neutral-400" /><h3 className="mt-3 text-sm font-semibold">No Email Templates Found</h3><p className="mt-1 text-sm text-neutral-500">Adjust search or filters to find matching templates.</p></div> : (
         <>
-          {viewMode === "table" ? <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950"><div className="overflow-x-auto"><table className="min-w-full border-collapse text-left"><thead className="bg-neutral-50 dark:bg-neutral-900"><tr className="border-b border-neutral-200 dark:border-neutral-800"><th className="w-12 px-4 py-3"><input type="checkbox" checked={selectedOnPage} onChange={(event) => setSelectedRowIds(event.target.checked ? Array.from(new Set([...selectedRowIds, ...currentData.map((item) => item.id)])) : selectedRowIds.filter((id) => !currentData.map((item) => item.id).includes(id)))} className="h-4 w-4 rounded border-neutral-300 accent-primary" /></th>{visibleColumns.template ? <th className="px-4 py-3 text-xs font-semibold uppercase text-neutral-500">Template</th> : null}{visibleColumns.subject ? <th className="px-4 py-3 text-xs font-semibold uppercase text-neutral-500">Subject Line</th> : null}{visibleColumns.variables ? <th className="px-4 py-3 text-xs font-semibold uppercase text-neutral-500">Variables</th> : null}{visibleColumns.lastModified ? <th className="px-4 py-3 text-xs font-semibold uppercase text-neutral-500">Last Modified</th> : null}<th className="w-20 px-4 py-3 text-right text-xs font-semibold uppercase text-neutral-500">Actions</th></tr></thead><tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">{currentData.map((template) => <tr key={template.id} onClick={() => navigate(`/dashboard/emails/${template.id}`)} className={`h-14 cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900 ${selectedRowIds.includes(template.id) ? "bg-primary/5" : ""}`}><td className="px-4 py-3" onClick={(event) => event.stopPropagation()}><input type="checkbox" checked={selectedRowIds.includes(template.id)} onChange={(event) => toggleSelected(template.id, event.target.checked)} className="h-4 w-4 rounded border-neutral-300 accent-primary" /></td>{visibleColumns.template ? <td className="px-4 py-3"><div className="flex items-center gap-3"><TemplateMark /><span><span className="block text-sm font-semibold text-primary">{template.name}</span><span className="text-[10px] font-semibold uppercase text-neutral-400">{template.id}</span></span></div></td> : null}{visibleColumns.subject ? <td className="max-w-md px-4 py-3"><p className="truncate text-sm font-medium text-neutral-700 dark:text-neutral-300">{template.subject}</p><p className="truncate text-xs text-neutral-500">{template.description}</p></td> : null}{visibleColumns.variables ? <td className="px-4 py-3"><span className="inline-flex h-6 items-center gap-1 rounded-full border border-neutral-200 bg-neutral-50 px-2 text-xs font-medium dark:border-neutral-800 dark:bg-neutral-900"><Code2 className="h-3 w-3" />{template.variables.length}</span></td> : null}{visibleColumns.lastModified ? <td className="px-4 py-3 font-mono text-sm text-neutral-600 dark:text-neutral-400">{formatDate(template.lastModified)}</td> : null}<td className="px-4 py-3 text-right">{renderActions(template)}</td></tr>)}</tbody></table></div>{renderPagination()}</div> : null}
-          {viewMode === "grid" ? <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">{currentData.map((template) => <div key={template.id} onClick={() => navigate(`/dashboard/emails/${template.id}`)} className={`cursor-pointer rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950 ${selectedRowIds.includes(template.id) ? "ring-2 ring-primary/20" : ""}`}><div className="mb-4 flex items-start justify-between gap-3"><div className="flex items-center gap-3"><input type="checkbox" checked={selectedRowIds.includes(template.id)} onClick={(event) => event.stopPropagation()} onChange={(event) => toggleSelected(template.id, event.currentTarget.checked)} className="h-4 w-4 rounded border-neutral-300 accent-primary" /><TemplateMark /><div><h3 className="text-sm font-semibold">{template.name}</h3><p className="text-xs text-neutral-500">{template.id}</p></div></div>{renderActions(template)}</div><p className="line-clamp-2 text-sm text-neutral-600 dark:text-neutral-400">{template.subject}</p><div className="mt-4 flex items-center justify-between text-xs text-neutral-500"><span>{template.variables.length} variables</span><span>{formatDate(template.lastModified)}</span></div></div>)}</div> : null}
-          {viewMode === "list" ? <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950"><div className="divide-y divide-neutral-100 dark:divide-neutral-800">{currentData.map((template) => <div key={template.id} onClick={() => navigate(`/dashboard/emails/${template.id}`)} className={`flex cursor-pointer flex-col gap-3 p-4 hover:bg-neutral-50 dark:hover:bg-neutral-900 md:flex-row md:items-center md:justify-between ${selectedRowIds.includes(template.id) ? "bg-primary/5" : ""}`}><div className="flex min-w-0 items-center gap-3"><input type="checkbox" checked={selectedRowIds.includes(template.id)} onClick={(event) => event.stopPropagation()} onChange={(event) => toggleSelected(template.id, event.currentTarget.checked)} className="h-4 w-4 rounded border-neutral-300 accent-primary" /><TemplateMark /><div className="min-w-0"><h3 className="truncate text-sm font-semibold">{template.name}</h3><p className="truncate text-sm text-neutral-500">{template.subject}</p></div></div><div className="flex items-center gap-4"><span className="text-xs text-neutral-500">{template.variables.length} variables</span><span className="text-sm text-neutral-500">{formatDate(template.lastModified)}</span>{renderActions(template)}</div></div>)}</div>{renderPagination()}</div> : null}
+          {viewMode === "table" ? <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950"><div className="overflow-x-auto"><table className="min-w-full border-collapse text-left"><thead className="bg-neutral-50 dark:bg-neutral-900"><tr className="border-b border-neutral-200 dark:border-neutral-800"><th className="w-12 px-4 py-3"><input type="checkbox" checked={selectedOnPage} onChange={(event) => setSelectedRowIds(event.target.checked ? Array.from(new Set([...selectedRowIds, ...currentData.map((item) => item.id)])) : selectedRowIds.filter((id) => !currentData.map((item) => item.id).includes(id)))} className="h-4 w-4 rounded border-neutral-300 accent-primary" /></th>{visibleColumns.template ? <th className="px-4 py-3 text-sm font-semibold text-neutral-500"><button type="button" onClick={() => handleSort("template")} className="whitespace-nowrap" aria-label="Sort by Template">Template{getSortIcon("template")}</button></th> : null}{visibleColumns.subject ? <th className="px-4 py-3 text-sm font-semibold text-neutral-500"><button type="button" onClick={() => handleSort("subject")} className="whitespace-nowrap" aria-label="Sort by Subject Line">Subject Line{getSortIcon("subject")}</button></th> : null}{visibleColumns.variables ? <th className="px-4 py-3 text-sm font-semibold text-neutral-500"><button type="button" onClick={() => handleSort("variables")} className="whitespace-nowrap" aria-label="Sort by Variables">Variables{getSortIcon("variables")}</button></th> : null}{visibleColumns.lastModified ? <th className="px-4 py-3 text-sm font-semibold text-neutral-500"><button type="button" onClick={() => handleSort("lastModified")} className="whitespace-nowrap" aria-label="Sort by Last Modified">Last Modified{getSortIcon("lastModified")}</button></th> : null}<th className="w-20 px-4 py-3 text-right text-sm font-semibold text-neutral-500">Actions</th></tr></thead><tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">{currentData.map((template) => <tr key={template.id} onClick={() => navigate(`/dashboard/emails/${template.id}`)} className={`h-14 cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-900 ${selectedRowIds.includes(template.id) ? "bg-primary/5" : ""}`}><td className="px-4 py-3" onClick={(event) => event.stopPropagation()}><input type="checkbox" checked={selectedRowIds.includes(template.id)} onChange={(event) => toggleSelected(template.id, event.target.checked)} className="h-4 w-4 rounded border-neutral-300 accent-primary" /></td>{visibleColumns.template ? <td className="px-4 py-3"><div className="flex items-center gap-3"><TemplateMark /><span><span className="block text-sm font-semibold text-primary">{template.name}</span><span className="text-[10px] font-semibold uppercase text-neutral-400">{template.id}</span></span></div></td> : null}{visibleColumns.subject ? <td className="max-w-md px-4 py-3"><p className="truncate text-sm font-medium text-neutral-700 dark:text-neutral-300">{template.subject}</p><p className="truncate text-xs text-neutral-500">{template.description}</p></td> : null}{visibleColumns.variables ? <td className="px-4 py-3"><span className="inline-flex h-6 items-center gap-1 rounded-full border border-neutral-200 bg-neutral-50 px-2 text-xs font-medium dark:border-neutral-800 dark:bg-neutral-900"><Code2 className="h-3 w-3" />{template.variables.length}</span></td> : null}{visibleColumns.lastModified ? <td className="px-4 py-3 font-mono text-sm text-neutral-600 dark:text-neutral-400">{formatDate(template.lastModified)}</td> : null}<td className="px-4 py-3 text-right">{renderActions(template)}</td></tr>)}</tbody></table></div>{renderPagination()}</div> : null}
         </>
       )}
-      {viewMode !== "table" && filteredTemplates.length > 0 ? <div className="mt-4 overflow-hidden rounded-lg border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">{renderPagination()}</div> : null}
     </div>
   );
 }

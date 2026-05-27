@@ -1,8 +1,6 @@
 import { type ComponentType, type FormEvent, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import {
-  ArrowDown,
-  ArrowUp,
   ArrowUpDown,
   BarChart3,
   Building2,
@@ -406,7 +404,7 @@ function FilterPanel({
 export default function ClinicManagementPage() {
   const navigate = useNavigate();
   const [clinics, setClinics] = useState<Clinic[]>(mockClinics);
-  const [viewMode, setViewMode] = useState<ViewMode>("table");
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [showSummary, setShowSummary] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [showColumnPanel, setShowColumnPanel] = useState(false);
@@ -542,8 +540,7 @@ export default function ClinicManagementPage() {
   };
 
   const renderSortIcon = (field: ColumnKey) => {
-    if (sortField !== field) return <ArrowUpDown className="h-3.5 w-3.5 text-neutral-400" />;
-    return sortDirection === "asc" ? <ArrowUp className="h-3.5 w-3.5 text-primary" /> : <ArrowDown className="h-3.5 w-3.5 text-primary" />;
+    return <ArrowUpDown className={`h-3.5 w-3.5 ${sortField === field ? "text-primary" : "text-neutral-400"}`} />;
   };
 
   const handleSelectRow = (clinicId: string, checked: boolean) => {
@@ -801,9 +798,6 @@ export default function ClinicManagementPage() {
     <div className="min-h-full bg-neutral-50 px-6 py-5 text-[14px] text-neutral-900 dark:bg-neutral-950 dark:text-white">
       <div className="mb-5 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div>
-          <div className="mb-1 text-xs font-medium text-neutral-500 dark:text-neutral-400">
-            Administration <span className="mx-1 text-neutral-300">/</span> Clinic Management
-          </div>
           <h1 className="text-2xl font-semibold leading-8 tracking-normal text-neutral-950 dark:text-white">Clinic Management</h1>
           <p className="mt-1 max-w-2xl text-sm leading-5 text-neutral-500 dark:text-neutral-400">
             Manage clinic organizations, subscription plans, and platform access status.
@@ -938,7 +932,7 @@ export default function ClinicManagementPage() {
                       </th>
                       {columns.map((column) =>
                         visibleColumns[column.key] ? (
-                          <th key={column.key} className="px-4 py-3 text-xs font-semibold uppercase text-neutral-500 dark:text-neutral-400">
+                          <th key={column.key} className="px-4 py-3 text-sm font-semibold text-neutral-500 dark:text-neutral-400">
                             <button type="button" onClick={() => handleSort(column.key)} className="inline-flex items-center gap-1.5">
                               {column.label}
                               {renderSortIcon(column.key)}
@@ -946,7 +940,7 @@ export default function ClinicManagementPage() {
                           </th>
                         ) : null,
                       )}
-                      <th className="w-20 px-4 py-3 text-right text-xs font-semibold uppercase text-neutral-500 dark:text-neutral-400">Actions</th>
+                      <th className="w-20 px-4 py-3 text-right text-sm font-semibold text-neutral-500 dark:text-neutral-400">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
@@ -980,29 +974,28 @@ export default function ClinicManagementPage() {
           ) : null}
 
           {viewMode === "grid" ? (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               {currentData.map((clinic) => (
-                <div key={clinic.id} onClick={() => navigate(`/dashboard/clinics/${clinic.id}`)} className={`cursor-pointer rounded-lg border border-neutral-200 bg-white p-4 transition-colors hover:border-neutral-300 dark:border-neutral-800 dark:bg-neutral-950 dark:hover:border-neutral-700 ${selectedRowIds.includes(clinic.id) ? "ring-2 ring-primary/20" : ""}`}>
+                <div key={clinic.id} onClick={() => navigate(`/dashboard/clinics/${clinic.id}`)} className={`flex min-h-[236px] cursor-pointer flex-col rounded-lg border border-neutral-200 bg-white p-4 transition-colors hover:border-neutral-300 dark:border-neutral-800 dark:bg-neutral-950 dark:hover:border-neutral-700 ${selectedRowIds.includes(clinic.id) ? "ring-2 ring-primary/20" : ""}`}>
                   <div className="mb-4 flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <input type="checkbox" checked={selectedRowIds.includes(clinic.id)} onClick={(event) => event.stopPropagation()} onChange={(event) => handleSelectRow(clinic.id, event.target.checked)} className="h-4 w-4 rounded border-neutral-300 accent-primary" />
+                    <div className="flex min-w-0 items-center gap-3">
                       <ClinicMark name={clinic.name} />
-                      <div>
-                        <h3 className="text-sm font-semibold text-neutral-950 dark:text-white">{clinic.name}</h3>
-                        <p className="font-mono text-xs text-neutral-500 dark:text-neutral-400">{clinic.id}</p>
+                      <div className="min-w-0">
+                        <h3 className="truncate text-base font-semibold text-neutral-950 dark:text-white">{clinic.name}</h3>
+                        <p className="font-mono text-sm text-neutral-500 dark:text-neutral-400">{clinic.id}</p>
                       </div>
                     </div>
-                    <div onClick={(event) => event.stopPropagation()}>{renderActionsMenu(clinic)}</div>
+                    <div className="flex items-center gap-2" onClick={(event) => event.stopPropagation()}><input type="checkbox" checked={selectedRowIds.includes(clinic.id)} onChange={(event) => handleSelectRow(clinic.id, event.target.checked)} className="h-4 w-4 rounded border-neutral-300 accent-primary" />{renderActionsMenu(clinic)}</div>
                   </div>
-                  <div className="grid gap-3 text-sm">
-                    <div className="flex items-center justify-between gap-3"><span className="text-neutral-500 dark:text-neutral-400">Status</span><StatusBadge status={clinic.status} /></div>
+                  <div className="flex-1 grid gap-2.5 text-sm">
                     <div className="flex items-center justify-between gap-3"><span className="text-neutral-500 dark:text-neutral-400">Plan</span><PlanBadge plan={clinic.planType} /></div>
                     <div className="min-w-0"><span className="text-neutral-500 dark:text-neutral-400">Email</span><p className="truncate font-medium text-neutral-800 dark:text-neutral-200">{clinic.email}</p></div>
                     <div className="min-w-0"><span className="text-neutral-500 dark:text-neutral-400">Admin</span><p className="truncate font-medium text-neutral-800 dark:text-neutral-200">{clinic.adminName}</p></div>
                   </div>
+                  <div className="mt-4 flex min-h-10 items-center justify-between border-t border-neutral-100 pt-3 dark:border-neutral-800"><span className="text-sm text-neutral-500 dark:text-neutral-400">Status</span><StatusBadge status={clinic.status} /></div>
                 </div>
               ))}
-              <div className="md:col-span-2 xl:col-span-3 overflow-hidden rounded-lg border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">{renderPagination()}</div>
+              <div className="md:col-span-2 xl:col-span-4 overflow-hidden rounded-lg border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">{renderPagination()}</div>
             </div>
           ) : null}
 

@@ -140,6 +140,47 @@
     @apply bg-background text-foreground;
   }
 
+  .clinic-admin-shell {
+    font-family: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 14px;
+    letter-spacing: 0;
+    color: var(--foreground);
+  }
+
+  .clinic-admin-shell * {
+    letter-spacing: 0;
+  }
+
+  .clinic-admin-shell h1 {
+    font-size: 24px;
+    line-height: 32px;
+    font-weight: 700;
+  }
+
+  .clinic-admin-shell h2 {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+    font-weight: 600;
+  }
+
+  .clinic-admin-shell h3,
+  .clinic-admin-shell h4 {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    font-weight: 600;
+  }
+
+  .clinic-admin-shell button,
+  .clinic-admin-shell input,
+  .clinic-admin-shell select,
+  .clinic-admin-shell textarea {
+    font-size: 14px;
+  }
+
+  .clinic-admin-shell svg {
+    flex-shrink: 0;
+  }
+
   /**
   * Default typography styles for HTML elements (h1-h4, p, label, button, input).
   * These are in @layer base, so Tailwind utility classes (like text-sm, text-lg) automatically override them.
@@ -189,5 +230,360 @@
     font-size: var(--text-base);
     font-weight: var(--font-weight-normal);
     line-height: 1.5;
+  }
+}
+
+@layer components {
+  .clinic-admin-content {
+    background: #fafafa;
+    padding: 20px 24px !important;
+    min-height: 0;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    scroll-behavior: smooth;
+  }
+
+  .dark .clinic-admin-content {
+    background: #0a0a0a;
+  }
+
+  .clinic-admin-content > div:first-child {
+    max-width: 100%;
+  }
+
+  .clinic-admin-content [class*="rounded-lg"][class*="border"][class*="bg-white"],
+  .clinic-admin-content [class*="rounded-lg"][class*="border"][class*="bg-card"] {
+    border-color: #e5e5e5 !important;
+    border-radius: 8px !important;
+  }
+
+  .dark .clinic-admin-content [class*="rounded-lg"][class*="border"][class*="bg-white"],
+  .dark .clinic-admin-content [class*="rounded-lg"][class*="border"][class*="bg-card"] {
+    border-color: #262626 !important;
+  }
+
+  .clinic-admin-content [class*="shadow-sm"],
+  .clinic-admin-content [class*="shadow-md"] {
+    box-shadow: none !important;
+  }
+
+  .clinic-admin-content [class*="shadow-lg"],
+  .clinic-admin-content [class*="shadow-xl"],
+  .clinic-admin-content [class*="shadow-2xl"] {
+    box-shadow: 0 12px 24px -18px rgb(15 23 42 / 0.35) !important;
+  }
+
+  .clinic-admin-content [class*="grid"][class*="gap-4"] > [class*="rounded-lg"][class*="border"][class*="bg-white"],
+  .clinic-admin-content [class*="grid"][class*="gap-4"] > [class*="rounded-lg"][class*="border"][class*="bg-card"] {
+    padding: 16px !important;
+  }
+
+  .clinic-admin-content [class*="text-2xl"] {
+    font-size: 20px !important;
+    line-height: 28px !important;
+  }
+
+  .clinic-admin-content h1,
+  .clinic-admin-content h1[class*="text-2xl"] {
+    font-size: 24px !important;
+    line-height: 32px !important;
+    font-weight: 700 !important;
+  }
+
+  .clinic-admin-content [class*="text-xl"] {
+    font-size: 18px !important;
+    line-height: 28px !important;
+  }
+
+  .clinic-admin-content [class*="text-lg"] {
+    font-size: 16px !important;
+    line-height: 24px !important;
+  }
+
+  .clinic-admin-content [class*="text-sm"] {
+    font-size: 14px !important;
+    line-height: 20px !important;
+  }
+
+  .clinic-admin-content [class*="text-xs"] {
+    font-size: 12px !important;
+    line-height: 16px !important;
+  }
+
+  .clinic-admin-content [class*="rounded-full"][class*="border"][class*="text-xs"] {
+    min-height: 28px !important;
+    padding-inline: 8px !important;
+    gap: 6px !important;
+    font-size: 12px !important;
+    line-height: 16px !important;
+    font-weight: 500 !important;
+  }
+
+  .clinic-admin-content [class*="rounded-full"][class*="border"][class*="text-xs"] svg {
+    width: 0.75rem;
+    height: 0.75rem;
+  }
+
+  .clinic-admin-shell,
+  .clinic-admin-content,
+  .slim-scroll,
+  .clinic-admin-shell * {
+    scrollbar-width: thin;
+    scrollbar-color: #a3a3a3 transparent;
+  }
+
+  .clinic-admin-shell ::-webkit-scrollbar,
+  .slim-scroll::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .clinic-admin-shell ::-webkit-scrollbar-track,
+  .slim-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .clinic-admin-shell ::-webkit-scrollbar-thumb,
+  .slim-scroll::-webkit-scrollbar-thumb {
+    background: #a3a3a3;
+    border-radius: 999px;
+  }
+
+  .clinic-admin-shell ::-webkit-scrollbar-thumb:hover,
+  .slim-scroll::-webkit-scrollbar-thumb:hover {
+    background: #737373;
+  }
+
+  .clinic-admin-footer {
+    position: relative;
+    z-index: 30;
+  }
+
+  .clinic-admin-content > div:first-child {
+    min-height: 100%;
+    min-height: 0 !important;
+    overflow: visible;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .clinic-admin-content > div:first-child > .max-w-full,
+  .clinic-admin-content > div:first-child > [class*="max-w-full"] {
+    min-height: 0;
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+  }
+
+  .clinic-admin-content > div:first-child > .max-w-full > :is(.grid, .space-y-3),
+  .clinic-admin-content > div:first-child > [class*="max-w-full"] > :is(.grid, .space-y-3) {
+    min-height: 0;
+    overflow: auto;
+    padding-bottom: 8px;
+  }
+
+  .clinic-admin-content > div:first-child > .max-w-full > :is(.grid, .space-y-3) + div,
+  .clinic-admin-content > div:first-child > [class*="max-w-full"] > :is(.grid, .space-y-3) + div {
+    flex-shrink: 0;
+  }
+
+  .clinic-admin-content table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: #fafafa;
+  }
+
+  .dark .clinic-admin-content table thead th {
+    background: #171717;
+  }
+
+  .clinic-admin-content [class*="overflow-x-auto"],
+  .clinic-admin-content [class*="overflow-y-auto"],
+  .clinic-admin-content [class*="overflow-auto"] {
+    scrollbar-width: thin;
+    scrollbar-color: #a3a3a3 transparent;
+    scroll-behavior: smooth;
+  }
+
+  .clinic-admin-content [class*="overflow-hidden"][class*="rounded-lg"][class*="border"][class*="bg-white"] > [class*="overflow-x-auto"],
+  .clinic-admin-content [class*="overflow-hidden"][class*="rounded-lg"][class*="border"][class*="bg-white"] > [class*="overflow-auto"] {
+    max-height: min(520px, calc(100vh - 360px));
+    overflow: auto !important;
+  }
+
+  .clinic-admin-content [class*="border-t"][class*="bg-white"][class*="px-4"][class*="py-3"] {
+    position: sticky;
+    bottom: 0;
+    z-index: 20;
+    flex-shrink: 0;
+  }
+
+  .clinic-admin-content :is([class*="min-h-full"], [class*="bg-neutral-50"][class*="px-6"][class*="py-5"]) {
+    min-height: 0 !important;
+    min-height: 100%;
+    background: transparent !important;
+    padding: 0 !important;
+    overflow: visible;
+  }
+
+  .clinic-admin-content .mb-6.grid.grid-cols-1.gap-4 > div,
+  .clinic-admin-content .mb-5.grid.gap-4 > div {
+    min-height: 112px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 20px !important;
+  }
+
+  .clinic-admin-content .mb-6.grid.grid-cols-1.gap-4 > div > p:first-child,
+  .clinic-admin-content .mb-5.grid.gap-4 > div span:first-child {
+    font-size: 12px !important;
+    line-height: 16px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase;
+    color: #737373;
+  }
+
+  .dark .clinic-admin-content .mb-6.grid.grid-cols-1.gap-4 > div > p:first-child,
+  .dark .clinic-admin-content .mb-5.grid.gap-4 > div span:first-child {
+    color: #a3a3a3;
+  }
+
+  .clinic-admin-content .flex-wrap {
+    align-items: center;
+  }
+
+  .clinic-admin-content input,
+  .clinic-admin-content select,
+  .clinic-admin-content button {
+    line-height: 20px;
+  }
+
+  .clinic-admin-content [class*="min-w-[360px]"],
+  .clinic-admin-content [class*="min-w-[320px]"] {
+    max-width: min(360px, calc(100vw - 48px));
+  }
+
+  .clinic-admin-content button[title="Grid View"],
+  .clinic-admin-content button[title="List View"],
+  .clinic-admin-content button[title="Table View"] {
+    color: inherit;
+  }
+
+  .clinic-admin-content button[title="Grid View"][class*="bg-neutral"],
+  .clinic-admin-content button[title="List View"][class*="bg-neutral"],
+  .clinic-admin-content button[title="Table View"][class*="bg-neutral"],
+  .clinic-admin-content button[title="Grid View"][class*="bg-white"][class*="text-primary"],
+  .clinic-admin-content button[title="List View"][class*="bg-white"][class*="text-primary"],
+  .clinic-admin-content button[title="Table View"][class*="bg-white"][class*="text-primary"] {
+    background: color-mix(in srgb, var(--primary) 10%, transparent) !important;
+    color: var(--primary) !important;
+  }
+
+  .clinic-admin-content table {
+    font-size: 0.875rem;
+  }
+
+  .clinic-admin-content th {
+    height: 44px;
+    padding: 12px 16px !important;
+    color: #525252;
+    font-size: 0.875rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0;
+    text-transform: none;
+    vertical-align: middle;
+  }
+
+  .dark .clinic-admin-content th {
+    color: #a3a3a3;
+  }
+
+  .clinic-admin-content th button {
+    display: inline-flex;
+    min-height: 20px;
+    align-items: center;
+    gap: 6px;
+    border-radius: 6px;
+    color: inherit;
+    font-size: 0.875rem !important;
+    font-weight: 600 !important;
+    line-height: 20px;
+    text-align: inherit;
+    transition: color 150ms ease, background-color 150ms ease;
+  }
+
+  .clinic-admin-content th button:hover {
+    color: var(--primary);
+  }
+
+  .clinic-admin-content th button svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+
+  .clinic-admin-content td {
+    height: 52px;
+    padding: 12px 16px !important;
+    color: #525252;
+    font-size: 0.875rem;
+  }
+
+  .dark .clinic-admin-content td {
+    color: #a3a3a3;
+  }
+
+  .clinic-admin-content input[type="checkbox"] {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .clinic-admin-content button[class*="h-10"],
+  .clinic-admin-content input[class*="h-10"],
+  .clinic-admin-content select[class*="h-10"] {
+    min-height: 40px;
+  }
+
+  .clinic-admin-shell aside [class*="h-10"],
+  .clinic-admin-content [class*="h-10"] {
+    height: 40px !important;
+  }
+
+  .clinic-admin-shell aside [class*="w-10"],
+  .clinic-admin-content [class*="w-10"] {
+    width: 40px !important;
+  }
+
+  .clinic-admin-content button[title="Grid View"],
+  .clinic-admin-content button[title="List View"],
+  .clinic-admin-content button[title="Table View"] {
+    width: 40px !important;
+    height: 40px !important;
+  }
+
+  .clinic-admin-content [class*="min-w-[360px]"],
+  .clinic-admin-content [class*="min-w-[320px]"] {
+    min-width: min(22rem, calc(100vw - 2rem));
+  }
+
+  .clinic-admin-content [class*="bg-primary"][class*="text-white"] {
+    box-shadow: none;
+  }
+
+  @media (min-width: 1600px) {
+    .clinic-admin-content {
+      padding: 20px 24px !important;
+    }
+
+    .clinic-admin-content [class*="gap-5"] {
+      gap: 16px !important;
+    }
+
+    .clinic-admin-content [class*="p-5"] {
+      padding: 16px !important;
+    }
   }
 }

@@ -3,6 +3,7 @@ import {
   BarChart3,
   Check,
   CheckCircle,
+  ArrowUpDown,
   Columns3,
   Download,
   Edit,
@@ -338,7 +339,7 @@ function FilterPanel({
 
 export default function RoleManagementPage() {
   const [roles, setRoles] = useState<Role[]>(mockRoles);
-  const [viewMode, setViewMode] = useState<ViewMode>("table");
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [showSummary, setShowSummary] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [showColumnPanel, setShowColumnPanel] = useState(false);
@@ -363,6 +364,8 @@ export default function RoleManagementPage() {
     createdAt: true,
     isSystem: true,
   });
+  const [sortField, setSortField] = useState<ColumnKey>("name");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [currentPage, setCurrentPage] = useState(1);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [drawerMode, setDrawerMode] = useState<"add" | "edit">("add");
@@ -390,8 +393,26 @@ export default function RoleManagementPage() {
     });
   }, [dateRange.end, dateRange.start, roles, searchQuery, statusFilter, typeFilter]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredRoles.length / ITEMS_PER_PAGE));
-  const currentData = filteredRoles.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  const sortedRoles = useMemo(() => {
+    const getSortValue = (role: Role, field: ColumnKey) => {
+      if (field === "permissions") return countPermissions(role.permissions);
+      if (field === "isSystem") return role.isSystem ? "System" : "Custom";
+      return role[field];
+    };
+
+    return [...filteredRoles].sort((first, second) => {
+      const firstValue = getSortValue(first, sortField);
+      const secondValue = getSortValue(second, sortField);
+      const result =
+        typeof firstValue === "number" && typeof secondValue === "number"
+          ? firstValue - secondValue
+          : String(firstValue).localeCompare(String(secondValue), undefined, { numeric: true, sensitivity: "base" });
+      return sortDirection === "asc" ? result : -result;
+    });
+  }, [filteredRoles, sortDirection, sortField]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedRoles.length / ITEMS_PER_PAGE));
+  const currentData = sortedRoles.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
   const activeFilterCount = (statusFilter ? 1 : 0) + (typeFilter ? 1 : 0) + (dateRange.start || dateRange.end ? 1 : 0);
   const selectedOnPage = currentData.length > 0 && currentData.every((role) => selectedRowIds.includes(role.id));
   const visibleColumnCount = Object.values(visibleColumns).filter(Boolean).length;
@@ -504,6 +525,20 @@ export default function RoleManagementPage() {
     });
   };
 
+  const handleSort = (field: ColumnKey) => {
+    setCurrentPage(1);
+    if (sortField === field) {
+      setSortDirection((direction) => (direction === "asc" ? "desc" : "asc"));
+      return;
+    }
+    setSortField(field);
+    setSortDirection("asc");
+  };
+
+  const getSortIcon = (field: ColumnKey) => (
+    <ArrowUpDown className={`h-3.5 w-3.5 ${sortField === field ? "text-primary" : "text-neutral-400"}`} />
+  );
+
   const toggleSelected = (roleId: string, checked: boolean) => {
     setSelectedRowIds((current) => (checked ? Array.from(new Set([...current, roleId])) : current.filter((id) => id !== roleId)));
   };
@@ -548,7 +583,6 @@ export default function RoleManagementPage() {
     <div className="min-h-full bg-neutral-50 px-6 py-5 text-[14px] text-neutral-900 dark:bg-neutral-950 dark:text-white">
       <div className="mb-5 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div>
-          <div className="mb-1 text-xs font-medium text-neutral-500">Administration <span className="mx-1 text-neutral-300">/</span> Role Management</div>
           <h1 className="text-2xl font-semibold leading-8 tracking-normal text-neutral-950 dark:text-white">Role & Permissions</h1>
           <p className="mt-1 max-w-2xl text-sm leading-5 text-neutral-500 dark:text-neutral-400">Configure access control profiles, assign module permissions, and view assigned users.</p>
         </div>
@@ -623,14 +657,15 @@ export default function RoleManagementPage() {
                   <thead className="bg-neutral-50 dark:bg-neutral-900">
                     <tr className="border-b border-neutral-200 dark:border-neutral-800">
                       <th className="w-12 px-4 py-3"><input type="checkbox" checked={selectedOnPage} onChange={(event) => setSelectedRowIds(event.target.checked ? Array.from(new Set([...selectedRowIds, ...currentData.map((role) => role.id)])) : selectedRowIds.filter((id) => !currentData.map((role) => role.id).includes(id)))} className="h-4 w-4 rounded border-neutral-300 accent-primary" /></th>
-                      {visibleColumns.name ? <th className="px-4 py-3 text-xs font-semibold uppercase text-neutral-500">Role Name</th> : null}
-                      {visibleColumns.description ? <th className="px-4 py-3 text-xs font-semibold uppercase text-neutral-500">Description</th> : null}
-                      {visibleColumns.userCount ? <th className="px-4 py-3 text-xs font-semibold uppercase text-neutral-500">Users Assigned</th> : null}
-                      {visibleColumns.permissions ? <th className="px-4 py-3 text-xs font-semibold uppercase text-neutral-500">Permissions</th> : null}
-                      {visibleColumns.status ? <th className="px-4 py-3 text-xs font-semibold uppercase text-neutral-500">Status</th> : null}
-                      {visibleColumns.createdAt ? <th className="px-4 py-3 text-xs font-semibold uppercase text-neutral-500">Created</th> : null}
-                      {visibleColumns.isSystem ? <th className="px-4 py-3 text-xs font-semibold uppercase text-neutral-500">Type</th> : null}
-                      <th className="w-20 px-4 py-3 text-right text-xs font-semibold uppercase text-neutral-500">Actions</th>
+                      {tableColumns.map((column) => visibleColumns[column.key] ? (
+                        <th key={column.key} className="px-4 py-3 text-sm font-semibold text-neutral-500">
+                          <button type="button" onClick={() => handleSort(column.key)} className="whitespace-nowrap" aria-label={`Sort by ${column.label}`}>
+                            {column.label}
+                            {getSortIcon(column.key)}
+                          </button>
+                        </th>
+                      ) : null)}
+                      <th className="w-20 px-4 py-3 text-right text-sm font-semibold text-neutral-500">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
@@ -655,14 +690,18 @@ export default function RoleManagementPage() {
           ) : null}
 
           {viewMode === "grid" ? (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               {currentData.map((role) => (
-                <div key={role.id} onClick={() => handleEditRole(role)} className={`cursor-pointer rounded-lg border border-neutral-200 bg-white p-4 hover:border-neutral-300 dark:border-neutral-800 dark:bg-neutral-950 ${selectedRowIds.includes(role.id) ? "ring-2 ring-primary/20" : ""}`}>
-                  <div className="mb-4 flex items-start justify-between gap-3"><div className="flex items-center gap-3"><input type="checkbox" checked={selectedRowIds.includes(role.id)} onClick={(event) => event.stopPropagation()} onChange={(event) => toggleSelected(role.id, event.target.checked)} className="h-4 w-4 rounded border-neutral-300 accent-primary" /><RoleMark /><div><h3 className="text-sm font-semibold">{role.name}</h3><p className="text-xs text-neutral-500">{role.description}</p></div></div><div onClick={(event) => event.stopPropagation()}>{roleActions(role)}</div></div>
-                  <div className="grid gap-3 text-sm"><div className="flex justify-between"><span className="text-neutral-500">Status</span><StatusBadge status={role.status} /></div><div className="flex justify-between"><span className="text-neutral-500">Type</span><TypeBadge isSystem={role.isSystem} /></div><div className="flex justify-between"><span className="text-neutral-500">Users</span><span className="font-medium">{role.userCount}</span></div><div className="flex justify-between"><span className="text-neutral-500">Permissions</span><PermissionBadge count={countPermissions(role.permissions)} /></div></div>
+                <div key={role.id} onClick={() => handleEditRole(role)} className={`flex min-h-[236px] cursor-pointer flex-col rounded-lg border border-neutral-200 bg-white p-4 hover:border-neutral-300 dark:border-neutral-800 dark:bg-neutral-950 ${selectedRowIds.includes(role.id) ? "ring-2 ring-primary/20" : ""}`}>
+                  <div className="mb-4 flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-3"><RoleMark /><div className="min-w-0"><h3 className="truncate text-base font-semibold">{role.name}</h3><p className="truncate text-sm text-neutral-500">{role.description}</p></div></div>
+                    <div className="flex items-center gap-2" onClick={(event) => event.stopPropagation()}><input type="checkbox" checked={selectedRowIds.includes(role.id)} onChange={(event) => toggleSelected(role.id, event.target.checked)} className="h-4 w-4 rounded border-neutral-300 accent-primary" />{roleActions(role)}</div>
+                  </div>
+                  <div className="flex-1 grid gap-2.5 text-sm"><div className="flex justify-between"><span className="text-neutral-500">Type</span><TypeBadge isSystem={role.isSystem} /></div><div className="flex justify-between"><span className="text-neutral-500">Users</span><span className="font-medium">{role.userCount}</span></div><div className="flex justify-between"><span className="text-neutral-500">Permissions</span><PermissionBadge count={countPermissions(role.permissions)} /></div></div>
+                  <div className="mt-4 flex min-h-10 items-center justify-between border-t border-neutral-100 pt-3 dark:border-neutral-800"><span className="text-sm text-neutral-500">Status</span><StatusBadge status={role.status} /></div>
                 </div>
               ))}
-              <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white md:col-span-2 xl:col-span-3 dark:border-neutral-800 dark:bg-neutral-950">{renderPagination()}</div>
+              <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white md:col-span-2 xl:col-span-4 dark:border-neutral-800 dark:bg-neutral-950">{renderPagination()}</div>
             </div>
           ) : null}
 
@@ -702,7 +741,7 @@ export default function RoleManagementPage() {
                 <h3 className="mb-2 text-xs font-semibold uppercase text-neutral-500">Access Permissions Grid</h3>
                 <div className="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-800">
                   <table className="w-full border-collapse">
-                    <thead className="bg-neutral-50 dark:bg-neutral-900"><tr><th className="border-b border-neutral-200 p-3 text-left text-xs font-semibold dark:border-neutral-800">Module</th>{["C", "R", "U", "D", "All"].map((label) => <th key={label} className="w-14 border-b border-neutral-200 p-3 text-center text-xs font-semibold dark:border-neutral-800">{label}</th>)}</tr></thead>
+                    <thead className="bg-neutral-50 dark:bg-neutral-900"><tr><th className="border-b border-neutral-200 p-3 text-left text-sm font-semibold dark:border-neutral-800">Module</th>{["C", "R", "U", "D", "All"].map((label) => <th key={label} className="w-14 border-b border-neutral-200 p-3 text-center text-sm font-semibold dark:border-neutral-800">{label}</th>)}</tr></thead>
                     <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
                       {modules.map((module) => (
                         <tr key={module.key} className="hover:bg-neutral-50 dark:hover:bg-neutral-900"><td className="p-3 text-xs font-semibold">{module.label}</td>{(["create", "read", "update", "delete"] as Array<keyof Permission>).map((permission) => <td key={permission} className="p-3 text-center"><input type="checkbox" checked={formPermissions[module.key][permission]} onChange={(event) => handlePermissionChange(module.key, permission, event.target.checked)} disabled={selectedRole?.isSystem} className="h-4 w-4 rounded border-neutral-300 accent-primary disabled:opacity-50" /></td>)}<td className="p-3 text-center"><button type="button" title="Toggle all for module" onClick={() => handleSelectAllPermissions(module.key)} disabled={selectedRole?.isSystem} className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 disabled:opacity-50 dark:hover:bg-neutral-900"><Check className="h-4 w-4" /></button></td></tr>

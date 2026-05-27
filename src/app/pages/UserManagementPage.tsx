@@ -1,9 +1,9 @@
 import { type ComponentType, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
+  ArrowUpDown,
   BarChart3,
   Check,
-  ChevronDown,
   Download,
   Edit,
   FileSpreadsheet,
@@ -404,13 +404,15 @@ export default function UserManagementPage() {
   const [showSummary, setShowSummary] = useState(true);
   const [selectedRowIds, setSelectedRowIds] = useState<string[]>([]);
   const [activeMenuRowId, setActiveMenuRowId] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>("table");
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [showFilters, setShowFilters] = useState(false);
   const [showColumns, setShowColumns] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(
     Object.fromEntries(tableColumns.map((column) => [column.key, true]))
   );
+  const [sortField, setSortField] = useState<ColumnConfig["key"]>("user");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [formFirstName, setFormFirstName] = useState("");
   const [formLastName, setFormLastName] = useState("");
   const [formEmail, setFormEmail] = useState("");
@@ -451,8 +453,23 @@ export default function UserManagementPage() {
     });
   }, [dateRange.end, dateRange.start, filterRole, filterStatus, searchQuery, users]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / ITEMS_PER_PAGE));
-  const currentData = filteredUsers.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  const sortedUsers = useMemo(() => {
+    const getSortValue = (user: UserData, field: ColumnConfig["key"]) => {
+      if (field === "user") return fullName(user);
+      return user[field] || "";
+    };
+
+    return [...filteredUsers].sort((first, second) => {
+      const result = String(getSortValue(first, sortField)).localeCompare(String(getSortValue(second, sortField)), undefined, {
+        numeric: true,
+        sensitivity: "base",
+      });
+      return sortDirection === "asc" ? result : -result;
+    });
+  }, [filteredUsers, sortDirection, sortField]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedUsers.length / ITEMS_PER_PAGE));
+  const currentData = sortedUsers.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   useEffect(() => {
     if (currentPage > totalPages) setCurrentPage(totalPages);
@@ -583,6 +600,21 @@ export default function UserManagementPage() {
   };
 
   const toggleColumn = (key: string) => setVisibleColumns((prev) => ({ ...prev, [key]: !prev[key] }));
+
+  const handleSort = (field: ColumnConfig["key"]) => {
+    setCurrentPage(1);
+    if (sortField === field) {
+      setSortDirection((direction) => (direction === "asc" ? "desc" : "asc"));
+      return;
+    }
+    setSortField(field);
+    setSortDirection("asc");
+  };
+
+  const getSortIcon = (field: ColumnConfig["key"]) => (
+    <ArrowUpDown className={`h-3.5 w-3.5 ${sortField === field ? "text-primary" : "text-neutral-400"}`} />
+  );
+
   const visibleColumnCount = tableColumns.filter((column) => visibleColumns[column.key]).length;
 
   const renderActions = (user: UserData) => (
@@ -666,12 +698,7 @@ export default function UserManagementPage() {
       <div className="max-w-full">
         <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h1 className="mb-1 text-[32px] font-semibold leading-[40px] text-neutral-900 dark:text-white">User Management</h1>
-            <nav className="mb-2 flex items-center gap-1 text-sm">
-              <span className="text-neutral-500 dark:text-neutral-400">Administration</span>
-              <ChevronDown className="h-3.5 w-3.5 -rotate-90 text-neutral-400" />
-              <span className="font-medium text-neutral-900 dark:text-white">User Management</span>
-            </nav>
+            <h1 className="mb-2 text-[32px] font-semibold leading-[40px] text-neutral-900 dark:text-white">User Management</h1>
             <p className="text-sm text-neutral-600 dark:text-neutral-400">
               Manage platform administrators, support representatives, and read-only viewers.
             </p>
@@ -766,22 +793,28 @@ export default function UserManagementPage() {
             {currentData.length > 0 ? currentData.map((user) => {
               const selected = selectedRowIds.includes(user.id);
               return (
-                <div key={user.id} className={`rounded-lg border bg-white p-5 shadow-sm transition-colors dark:bg-neutral-950 ${selected ? "border-primary/50 bg-primary/5" : "border-neutral-200 dark:border-neutral-800"}`}>
+                <div key={user.id} className={`flex min-h-[236px] flex-col rounded-lg border bg-white p-4 shadow-sm transition-colors dark:bg-neutral-950 ${selected ? "border-primary/50 bg-primary/5" : "border-neutral-200 dark:border-neutral-800"}`}>
                   <div className="mb-4 flex items-start justify-between gap-3">
-                    <AvatarMark user={user} />
+                    <div className="flex min-w-0 items-start gap-3">
+                      <AvatarMark user={user} />
+                      <div className="min-w-0">
+                        <h3 className="truncate text-base font-semibold text-neutral-900 dark:text-white">{fullName(user)}</h3>
+                        <p className="mt-1 truncate text-sm text-neutral-500 dark:text-neutral-400">{user.id}</p>
+                      </div>
+                    </div>
                     <div className="flex items-center gap-2">
                       <input type="checkbox" checked={selected} onChange={(event) => handleSelectRow(user.id, event.target.checked)} className="h-4 w-4 cursor-pointer rounded border-neutral-300 accent-primary" title="Select" />
                       {renderActions(user)}
                     </div>
                   </div>
-                  <div className="min-w-0">
-                    <h3 className="truncate text-sm font-semibold text-neutral-900 dark:text-white">{fullName(user)}</h3>
-                    <p className="mt-1 truncate text-xs text-neutral-500 dark:text-neutral-400">{user.email}</p>
+                  <div className="flex-1 space-y-2.5 text-sm">
+                    <div className="min-w-0"><span className="text-neutral-500 dark:text-neutral-400">Email</span><p className="truncate font-medium text-neutral-800 dark:text-neutral-200">{user.email}</p></div>
+                    <div className="flex items-center justify-between gap-2"><span className="text-neutral-500">Role</span><RoleBadge role={user.role} /></div>
+                    <div className="flex items-center justify-between gap-2"><span className="text-neutral-500">Last Login</span><span className="font-medium text-neutral-700 dark:text-neutral-300">{formatDate(user.lastLogin)}</span></div>
                   </div>
-                  <div className="mt-4 space-y-2.5">
-                    <div className="flex items-center justify-between gap-2"><span className="text-xs text-neutral-500">Role</span><RoleBadge role={user.role} /></div>
-                    <div className="flex items-center justify-between gap-2"><span className="text-xs text-neutral-500">Status</span><StatusBadge status={user.status} /></div>
-                    <div className="flex items-center justify-between gap-2"><span className="text-xs text-neutral-500">Last Login</span><span className="text-xs text-neutral-700 dark:text-neutral-300">{formatDate(user.lastLogin)}</span></div>
+                  <div className="mt-4 flex min-h-10 items-center justify-between border-t border-neutral-100 pt-3 dark:border-neutral-800">
+                    <span className="text-sm text-neutral-500">Status</span>
+                    <StatusBadge status={user.status} />
                   </div>
                 </div>
               );
@@ -829,11 +862,14 @@ export default function UserManagementPage() {
                       <Checkbox checked={currentData.length > 0 && currentData.every((user) => selectedRowIds.includes(user.id))} onCheckedChange={(checked) => handleSelectAll(Boolean(checked))} aria-label="Select all users" />
                     </th>
                     {tableColumns.map((column) => visibleColumns[column.key] ? (
-                      <th key={column.key} className="sticky top-0 z-10 border-b border-neutral-200 bg-neutral-50 px-6 py-3.5 text-xs font-semibold tracking-normal text-neutral-700 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300">
-                        {column.label}
+                      <th key={column.key} className="sticky top-0 z-10 border-b border-neutral-200 bg-neutral-50 px-6 py-3.5 text-sm font-semibold tracking-normal text-neutral-700 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300">
+                        <button type="button" onClick={() => handleSort(column.key)} className="whitespace-nowrap" aria-label={`Sort by ${column.label}`}>
+                          {column.label}
+                          {getSortIcon(column.key)}
+                        </button>
                       </th>
                     ) : null)}
-                    <th className="sticky top-0 z-10 border-b border-neutral-200 bg-neutral-50 px-6 py-3.5 text-right text-xs font-semibold tracking-normal text-neutral-700 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300">Actions</th>
+                    <th className="sticky top-0 z-10 border-b border-neutral-200 bg-neutral-50 px-6 py-3.5 text-right text-sm font-semibold tracking-normal text-neutral-700 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">

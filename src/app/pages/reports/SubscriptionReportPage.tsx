@@ -1,7 +1,5 @@
 import { type ComponentType, useMemo, useState } from "react";
 import {
-  ArrowDown,
-  ArrowUp,
   ArrowUpDown,
   BarChart3,
   Building2,
@@ -279,9 +277,7 @@ export default function SubscriptionReportPage() {
   };
 
   const getSortIcon = (field: SortField) => {
-    if (sortField !== field) return <ArrowUpDown className="h-3.5 w-3.5 text-neutral-400" />;
-    if (sortOrder === "asc") return <ArrowUp className="h-3.5 w-3.5 text-primary" />;
-    return <ArrowDown className="h-3.5 w-3.5 text-primary" />;
+    return <ArrowUpDown className={`h-3.5 w-3.5 ${sortField === field ? "text-primary" : "text-neutral-400"}`} />;
   };
 
   const openFilters = () => {
@@ -429,7 +425,7 @@ export default function SubscriptionReportPage() {
                 <tr className="border-b border-neutral-200 dark:border-neutral-800">
                   <th className="w-12 px-4 py-3"><input type="checkbox" checked={selectedOnPage} onChange={(event) => setSelectedRowIds(event.target.checked ? Array.from(new Set([...selectedRowIds, ...currentData.map((item) => item.id)])) : selectedRowIds.filter((id) => !currentData.map((item) => item.id).includes(id)))} className="h-4 w-4 rounded border-neutral-300 accent-primary" /></th>
                   {tableColumns.map((column) => visibleColumns[column.key] ? (
-                    <th key={column.key} className="px-4 py-3 text-xs font-semibold uppercase text-neutral-500">
+                    <th key={column.key} className="px-4 py-3 text-sm font-semibold text-neutral-500">
                       {column.sort ? <button type="button" onClick={() => handleSort(column.sort!)} className="inline-flex items-center gap-1.5 whitespace-nowrap">{column.label}{getSortIcon(column.sort)}</button> : column.label}
                     </th>
                   ) : null)}

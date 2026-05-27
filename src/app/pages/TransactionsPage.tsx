@@ -1,9 +1,9 @@
 import { type ComponentType, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
+  ArrowUpDown,
   BarChart3,
   Check,
-  ChevronDown,
   Download,
   Eye,
   FileSpreadsheet,
@@ -15,9 +15,6 @@ import {
   RefreshCw,
   Search,
   SlidersHorizontal,
-  Table2,
-  Grid3X3,
-  List,
   X,
 } from "lucide-react";
 import { Button } from "../components/ui/button";
@@ -194,40 +191,6 @@ function HeaderIconButton({
     >
       <Icon className="h-5 w-5" />
     </button>
-  );
-}
-
-function ViewModeSwitcher({
-  viewMode,
-  onChange,
-}: {
-  viewMode: ViewMode;
-  onChange: (mode: ViewMode) => void;
-}) {
-  const items: { id: ViewMode; icon: ComponentType<{ className?: string }>; title: string }[] = [
-    { id: "grid", icon: Grid3X3, title: "Grid View" },
-    { id: "list", icon: List, title: "List View" },
-    { id: "table", icon: Table2, title: "Table View" },
-  ];
-
-  return (
-    <div className="flex h-10 overflow-hidden rounded-lg border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
-      {items.map(({ id, icon: Icon, title }) => (
-        <button
-          key={id}
-          type="button"
-          title={title}
-          onClick={() => onChange(id)}
-          className={`flex h-10 w-10 items-center justify-center transition-colors ${
-            viewMode === id
-              ? "bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-white"
-              : "text-neutral-500 hover:bg-neutral-50 dark:text-neutral-400 dark:hover:bg-neutral-900"
-          }`}
-        >
-          <Icon className="h-4 w-4" />
-        </button>
-      ))}
-    </div>
   );
 }
 
@@ -553,13 +516,15 @@ export default function TransactionsPage() {
   const [showSummary, setShowSummary] = useState(true);
   const [selectedRowIds, setSelectedRowIds] = useState<string[]>([]);
   const [activeMenuRowId, setActiveMenuRowId] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>("table");
+  const [viewMode] = useState<ViewMode>("table");
   const [showFilters, setShowFilters] = useState(false);
   const [showColumns, setShowColumns] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(
     Object.fromEntries(tableColumns.map((column) => [column.key, true]))
   );
+  const [sortField, setSortField] = useState<ColumnConfig["key"]>("transactionDate");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const columnsRef = useRef<HTMLDivElement>(null);
   const moreRef = useRef<HTMLDivElement>(null);
 
@@ -609,8 +574,20 @@ export default function TransactionsPage() {
     });
   }, [amountRange.max, amountRange.min, dateRange.end, dateRange.start, searchQuery, statusFilter, transactions]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / ITEMS_PER_PAGE));
-  const currentData = filteredTransactions.slice(
+  const sortedTransactions = useMemo(() => {
+    return [...filteredTransactions].sort((first, second) => {
+      const firstValue = first[sortField];
+      const secondValue = second[sortField];
+      const result =
+        typeof firstValue === "number" && typeof secondValue === "number"
+          ? firstValue - secondValue
+          : String(firstValue).localeCompare(String(secondValue), undefined, { numeric: true, sensitivity: "base" });
+      return sortDirection === "asc" ? result : -result;
+    });
+  }, [filteredTransactions, sortDirection, sortField]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedTransactions.length / ITEMS_PER_PAGE));
+  const currentData = sortedTransactions.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE
   );
@@ -688,6 +665,20 @@ export default function TransactionsPage() {
       [key]: !prev[key],
     }));
   };
+
+  const handleSort = (field: ColumnConfig["key"]) => {
+    setCurrentPage(1);
+    if (sortField === field) {
+      setSortDirection((direction) => (direction === "asc" ? "desc" : "asc"));
+      return;
+    }
+    setSortField(field);
+    setSortDirection("asc");
+  };
+
+  const getSortIcon = (field: ColumnConfig["key"]) => (
+    <ArrowUpDown className={`h-3.5 w-3.5 ${sortField === field ? "text-primary" : "text-neutral-400"}`} />
+  );
 
   const visibleColumnCount = tableColumns.filter((column) => visibleColumns[column.key]).length;
 
@@ -794,14 +785,9 @@ export default function TransactionsPage() {
         <div className="mb-6">
           <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <h1 className="mb-1 text-[32px] font-semibold leading-[40px] text-neutral-900 dark:text-white">
+              <h1 className="mb-2 text-[32px] font-semibold leading-[40px] text-neutral-900 dark:text-white">
                 Transactions Log
               </h1>
-              <nav className="mb-2 flex items-center gap-1 text-sm">
-                <span className="text-neutral-500 dark:text-neutral-400">Billing</span>
-                <ChevronDown className="h-3.5 w-3.5 -rotate-90 text-neutral-400" />
-                <span className="font-medium text-neutral-900 dark:text-white">Transactions Log</span>
-              </nav>
               <p className="text-sm text-neutral-600 dark:text-neutral-400">
                 Review detailed financial records, download subscription invoices, and trace payment history.
               </p>
@@ -941,7 +927,6 @@ export default function TransactionsPage() {
                 )}
               </div>
 
-              <ViewModeSwitcher viewMode={viewMode} onChange={setViewMode} />
             </div>
           </div>
         </div>
@@ -971,7 +956,7 @@ export default function TransactionsPage() {
         )}
 
         {viewMode === "grid" && (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             {currentData.length > 0
               ? currentData.map((transaction) => {
                   const selected = selectedRowIds.includes(transaction.id);
@@ -979,7 +964,7 @@ export default function TransactionsPage() {
                     <div
                       key={transaction.id}
                       onClick={() => handleViewDetails(transaction)}
-                      className={`cursor-pointer rounded-lg border bg-white p-5 shadow-sm transition-colors hover:border-primary/60 dark:bg-neutral-950 ${
+                      className={`flex min-h-[236px] cursor-pointer flex-col rounded-lg border bg-white p-4 shadow-sm transition-colors hover:border-primary/60 dark:bg-neutral-950 ${
                         selected ? "border-primary/50 bg-primary/5" : "border-neutral-200 dark:border-neutral-800"
                       }`}
                     >
@@ -1015,7 +1000,7 @@ export default function TransactionsPage() {
                           {renderActions(transaction)}
                         </div>
                       </div>
-                      <div className="space-y-2 text-sm">
+                      <div className="flex-1 space-y-2.5 text-sm">
                         <div className="flex items-center justify-between gap-3">
                           <span className="text-neutral-500 dark:text-neutral-400">Plan</span>
                           <PlanBadge planName={transaction.planName} />
@@ -1028,15 +1013,19 @@ export default function TransactionsPage() {
                           <span className="text-neutral-500 dark:text-neutral-400">Date</span>
                           <span className="text-neutral-700 dark:text-neutral-300">{formatDate(transaction.transactionDate)}</span>
                         </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-neutral-500 dark:text-neutral-400">Payment</span>
+                          <span className="text-xs text-neutral-500 dark:text-neutral-400">{transaction.paymentMethod}</span>
+                        </div>
                       </div>
-                      <div className="mt-4 flex items-center justify-between border-t border-neutral-100 pt-3 dark:border-neutral-800">
+                      <div className="mt-4 flex min-h-10 items-center justify-between border-t border-neutral-100 pt-3 dark:border-neutral-800">
+                        <span className="text-sm text-neutral-500 dark:text-neutral-400">Status</span>
                         <StatusBadge status={transaction.status} />
-                        <span className="text-xs text-neutral-500 dark:text-neutral-400">{transaction.paymentMethod}</span>
                       </div>
                     </div>
                   );
                 })
-              : <div className="md:col-span-2 xl:col-span-3">{emptyState}</div>}
+              : <div className="md:col-span-2 xl:col-span-4">{emptyState}</div>}
           </div>
         )}
 
@@ -1111,15 +1100,23 @@ export default function TransactionsPage() {
                       visibleColumns[column.key] ? (
                         <th
                           key={column.key}
-                          className={`sticky top-0 z-10 border-b border-neutral-200 bg-neutral-50 px-6 py-3.5 text-xs font-semibold tracking-normal text-neutral-700 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300 ${
+                          className={`sticky top-0 z-10 border-b border-neutral-200 bg-neutral-50 px-6 py-3.5 text-sm font-semibold tracking-normal text-neutral-700 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300 ${
                             column.align === "right" ? "text-right" : ""
                           }`}
                         >
-                          {column.label}
+                          <button
+                            type="button"
+                            onClick={() => handleSort(column.key)}
+                            className={`whitespace-nowrap ${column.align === "right" ? "ml-auto" : ""}`}
+                            aria-label={`Sort by ${column.label}`}
+                          >
+                            {column.label}
+                            {getSortIcon(column.key)}
+                          </button>
                         </th>
                       ) : null
                     )}
-                    <th className="sticky top-0 z-10 border-b border-neutral-200 bg-neutral-50 px-6 py-3.5 text-right text-xs font-semibold tracking-normal text-neutral-700 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300">
+                    <th className="sticky top-0 z-10 border-b border-neutral-200 bg-neutral-50 px-6 py-3.5 text-right text-sm font-semibold tracking-normal text-neutral-700 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300">
                       Actions
                     </th>
                   </tr>

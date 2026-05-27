@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router";
-import { Plus, Edit, Trash, Copy } from "lucide-react";
+import { ArrowUpDown, Plus, Edit, Trash, Copy } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import Drawer from "../../components/Drawer";
@@ -25,6 +25,8 @@ interface Coupon {
   expiryDate: string;
   status: "Active" | "Expired" | "Disabled";
 }
+
+type SortField = keyof Pick<Coupon, "code" | "discountType" | "value" | "applicablePlans" | "usageCount" | "expiryDate" | "status">;
 
 const mockCoupons: Coupon[] = [
   {
@@ -66,6 +68,8 @@ export default function CouponsTab() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [sortField, setSortField] = useState<SortField>("code");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [formData, setFormData] = useState({
     code: "",
     discountType: "Percentage",
@@ -75,6 +79,26 @@ export default function CouponsTab() {
     expiryDate: "",
     status: "Active",
   });
+
+  const sortedCoupons = useMemo(() => [...mockCoupons].sort((first, second) => {
+    const firstValue = first[sortField];
+    const secondValue = second[sortField];
+    const result = typeof firstValue === "number" && typeof secondValue === "number"
+      ? firstValue - secondValue
+      : String(firstValue).localeCompare(String(secondValue), undefined, { numeric: true, sensitivity: "base" });
+    return sortDirection === "asc" ? result : -result;
+  }), [sortDirection, sortField]);
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection((direction) => (direction === "asc" ? "desc" : "asc"));
+      return;
+    }
+    setSortField(field);
+    setSortDirection("asc");
+  };
+
+  const getSortIcon = (field: SortField) => <ArrowUpDown className={`h-3.5 w-3.5 ${sortField === field ? "text-primary" : "text-muted-foreground"}`} />;
 
   return (
     <div className="h-full flex flex-col">
@@ -121,18 +145,24 @@ export default function CouponsTab() {
             <table className="w-full">
               <thead className="bg-muted">
                 <tr>
-                  <th className="text-left px-6 py-4 text-sm font-semibold text-foreground">Coupon Code</th>
-                  <th className="text-left px-6 py-4 text-sm font-semibold text-foreground">Discount Type</th>
-                  <th className="text-left px-6 py-4 text-sm font-semibold text-foreground">Value</th>
-                  <th className="text-left px-6 py-4 text-sm font-semibold text-foreground">Applicable Plans</th>
-                  <th className="text-left px-6 py-4 text-sm font-semibold text-foreground">Usage</th>
-                  <th className="text-left px-6 py-4 text-sm font-semibold text-foreground">Expiry Date</th>
-                  <th className="text-left px-6 py-4 text-sm font-semibold text-foreground">Status</th>
+                  {[
+                    ["code", "Coupon Code"],
+                    ["discountType", "Discount Type"],
+                    ["value", "Value"],
+                    ["applicablePlans", "Applicable Plans"],
+                    ["usageCount", "Usage"],
+                    ["expiryDate", "Expiry Date"],
+                    ["status", "Status"],
+                  ].map(([field, label]) => (
+                    <th key={field} className="text-left px-6 py-4 text-sm font-semibold text-foreground">
+                      <button type="button" onClick={() => handleSort(field as SortField)} className="whitespace-nowrap" aria-label={`Sort by ${label}`}>{label}{getSortIcon(field as SortField)}</button>
+                    </th>
+                  ))}
                   <th className="text-left px-6 py-4 text-sm font-semibold text-foreground">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {mockCoupons.map((coupon) => (
+                {sortedCoupons.map((coupon) => (
                   <tr key={coupon.id} className="border-t border-border hover:bg-muted/30 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">

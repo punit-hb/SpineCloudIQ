@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Eye, TrendingUp, TrendingDown, BarChart3, MoreVertical, X, Sparkles, UserPlus, AlertCircle, ShieldAlert } from "lucide-react";
+import { useMemo, useState } from "react";
+import { ArrowUpDown, Eye, TrendingUp, TrendingDown, BarChart3, MoreVertical, X, Sparkles, UserPlus, AlertCircle, ShieldAlert } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Progress } from "../components/ui/progress";
@@ -28,6 +28,17 @@ interface Subscription {
   paymentStatus: "Paid" | "Failed" | "Pending";
   subscriptionStatus: "Active" | "Inactive";
 }
+
+type SortField =
+  | "clinicName"
+  | "ownerEmail"
+  | "planName"
+  | "branchesAllowed"
+  | "providersAllowed"
+  | "patientsAllowed"
+  | "aiUsage"
+  | "paymentStatus"
+  | "subscriptionStatus";
 
 const mockSubscriptions: Subscription[] = [
   {
@@ -112,6 +123,8 @@ export default function SubscribersPage() {
   const [showMetrics, setShowMetrics] = useState(true);
   const [selectedRowIds, setSelectedRowIds] = useState<string[]>([]);
   const [activeMenuRowId, setActiveMenuRowId] = useState<string | null>(null);
+  const [sortField, setSortField] = useState<SortField>("clinicName");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   const filteredSubscriptions = subscriptions.filter((sub) => {
     const searchLower = searchQuery.toLowerCase();
@@ -124,6 +137,36 @@ export default function SubscribersPage() {
 
     return matchesSearch && matchesPlan && matchesStatus;
   });
+
+  const sortedSubscriptions = useMemo(() => {
+    const getSortValue = (subscription: Subscription, field: SortField) => {
+      if (field === "aiUsage") return Number(subscription.aiUsage.split("/")[0]);
+      return subscription[field];
+    };
+
+    return [...filteredSubscriptions].sort((first, second) => {
+      const firstValue = getSortValue(first, sortField);
+      const secondValue = getSortValue(second, sortField);
+      const result =
+        typeof firstValue === "number" && typeof secondValue === "number"
+          ? firstValue - secondValue
+          : String(firstValue).localeCompare(String(secondValue), undefined, { numeric: true, sensitivity: "base" });
+      return sortDirection === "asc" ? result : -result;
+    });
+  }, [filteredSubscriptions, sortDirection, sortField]);
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection((direction) => (direction === "asc" ? "desc" : "asc"));
+      return;
+    }
+    setSortField(field);
+    setSortDirection("asc");
+  };
+
+  const getSortIcon = (field: SortField) => (
+    <ArrowUpDown className={`h-3.5 w-3.5 ${sortField === field ? "text-primary" : "text-muted-foreground"}`} />
+  );
 
   const activeFilterCount =
     (planFilter ? 1 : 0) + (statusFilter ? 1 : 0);
@@ -143,7 +186,7 @@ export default function SubscribersPage() {
 
   const handleSelectAllRows = (checked: boolean) => {
     if (checked) {
-      setSelectedRowIds(filteredSubscriptions.map(s => s.id));
+      setSelectedRowIds(sortedSubscriptions.map(s => s.id));
     } else {
       setSelectedRowIds([]);
     }
@@ -192,13 +235,8 @@ export default function SubscribersPage() {
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground uppercase tracking-wider mb-1">
-            <span>Subscriptions</span>
-            <span>/</span>
-            <span className="text-foreground font-medium">Subscribers</span>
-          </div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Clinic Subscribers</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-muted-foreground mt-2">
             Monitor active clinic subscription levels, license volumes, and resource quotas
           </p>
         </div>
@@ -335,25 +373,25 @@ export default function SubscribersPage() {
               <tr>
                 <th className="w-12 py-3.5 px-4 text-center">
                   <Checkbox
-                    checked={filteredSubscriptions.length > 0 && filteredSubscriptions.every(s => selectedRowIds.includes(s.id))}
+                    checked={sortedSubscriptions.length > 0 && sortedSubscriptions.every(s => selectedRowIds.includes(s.id))}
                     onCheckedChange={handleSelectAllRows}
                     aria-label="Select all subscribers"
                   />
                 </th>
-                <th className="py-3.5 px-6 text-xs font-bold text-foreground uppercase tracking-wider">Clinic Name</th>
-                <th className="py-3.5 px-6 text-xs font-bold text-foreground uppercase tracking-wider">Owner Email</th>
-                <th className="py-3.5 px-6 text-xs font-bold text-foreground uppercase tracking-wider">Subscription Plan</th>
-                <th className="py-3.5 px-6 text-xs font-bold text-foreground uppercase tracking-wider">Branch Limit</th>
-                <th className="py-3.5 px-6 text-xs font-bold text-foreground uppercase tracking-wider">Provider Limit</th>
-                <th className="py-3.5 px-6 text-xs font-bold text-foreground uppercase tracking-wider">Patient Limit</th>
-                <th className="py-3.5 px-6 text-xs font-bold text-foreground uppercase tracking-wider">AI Volume</th>
-                <th className="py-3.5 px-6 text-xs font-bold text-foreground uppercase tracking-wider">Payment</th>
-                <th className="py-3.5 px-6 text-xs font-bold text-foreground uppercase tracking-wider">Status</th>
-                <th className="w-20 py-3.5 px-4 text-center text-xs font-bold text-foreground uppercase tracking-wider">Actions</th>
+                <th className="py-3.5 px-6 text-sm font-semibold text-foreground"><button type="button" onClick={() => handleSort("clinicName")} className="whitespace-nowrap" aria-label="Sort by Clinic Name">Clinic Name{getSortIcon("clinicName")}</button></th>
+                <th className="py-3.5 px-6 text-sm font-semibold text-foreground"><button type="button" onClick={() => handleSort("ownerEmail")} className="whitespace-nowrap" aria-label="Sort by Owner Email">Owner Email{getSortIcon("ownerEmail")}</button></th>
+                <th className="py-3.5 px-6 text-sm font-semibold text-foreground"><button type="button" onClick={() => handleSort("planName")} className="whitespace-nowrap" aria-label="Sort by Subscription Plan">Subscription Plan{getSortIcon("planName")}</button></th>
+                <th className="py-3.5 px-6 text-sm font-semibold text-foreground"><button type="button" onClick={() => handleSort("branchesAllowed")} className="whitespace-nowrap" aria-label="Sort by Branch Limit">Branch Limit{getSortIcon("branchesAllowed")}</button></th>
+                <th className="py-3.5 px-6 text-sm font-semibold text-foreground"><button type="button" onClick={() => handleSort("providersAllowed")} className="whitespace-nowrap" aria-label="Sort by Provider Limit">Provider Limit{getSortIcon("providersAllowed")}</button></th>
+                <th className="py-3.5 px-6 text-sm font-semibold text-foreground"><button type="button" onClick={() => handleSort("patientsAllowed")} className="whitespace-nowrap" aria-label="Sort by Patient Limit">Patient Limit{getSortIcon("patientsAllowed")}</button></th>
+                <th className="py-3.5 px-6 text-sm font-semibold text-foreground"><button type="button" onClick={() => handleSort("aiUsage")} className="whitespace-nowrap" aria-label="Sort by AI Volume">AI Volume{getSortIcon("aiUsage")}</button></th>
+                <th className="py-3.5 px-6 text-sm font-semibold text-foreground"><button type="button" onClick={() => handleSort("paymentStatus")} className="whitespace-nowrap" aria-label="Sort by Payment">Payment{getSortIcon("paymentStatus")}</button></th>
+                <th className="py-3.5 px-6 text-sm font-semibold text-foreground"><button type="button" onClick={() => handleSort("subscriptionStatus")} className="whitespace-nowrap" aria-label="Sort by Status">Status{getSortIcon("subscriptionStatus")}</button></th>
+                <th className="w-20 py-3.5 px-4 text-center text-sm font-semibold text-foreground">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {filteredSubscriptions.map((sub) => {
+              {sortedSubscriptions.map((sub) => {
                 const isRowSelected = selectedRowIds.includes(sub.id);
                 return (
                   <tr

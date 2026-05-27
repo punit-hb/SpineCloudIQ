@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate, useLocation } from "react-router";
-import { Plus, Edit, Copy, Archive, MoreVertical } from "lucide-react";
+import { ArrowUpDown, Plus, Edit, Copy, Archive, MoreVertical } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import Drawer from "../../components/Drawer";
@@ -29,6 +29,8 @@ interface Plan {
   status: "Active" | "Draft" | "Archived";
   createdDate: string;
 }
+
+type SortField = keyof Pick<Plan, "name" | "billingCycle" | "price" | "maxClinics" | "maxProviders" | "maxPatients" | "aiLimit" | "status" | "createdDate">;
 
 const mockPlans: Plan[] = [
   {
@@ -90,6 +92,8 @@ export default function PlansTab() {
   const location = useLocation();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
+  const [sortField, setSortField] = useState<SortField>("name");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   // Form state
   const [formData, setFormData] = useState({
@@ -189,6 +193,26 @@ export default function PlansTab() {
     setIsDrawerOpen(false);
   };
 
+  const sortedPlans = useMemo(() => [...mockPlans].sort((first, second) => {
+    const firstValue = first[sortField];
+    const secondValue = second[sortField];
+    const result = typeof firstValue === "number" && typeof secondValue === "number"
+      ? firstValue - secondValue
+      : String(firstValue).localeCompare(String(secondValue), undefined, { numeric: true, sensitivity: "base" });
+    return sortDirection === "asc" ? result : -result;
+  }), [sortDirection, sortField]);
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection((direction) => (direction === "asc" ? "desc" : "asc"));
+      return;
+    }
+    setSortField(field);
+    setSortDirection("asc");
+  };
+
+  const getSortIcon = (field: SortField) => <ArrowUpDown className={`h-3.5 w-3.5 ${sortField === field ? "text-primary" : "text-muted-foreground"}`} />;
+
   return (
     <div className="h-full flex flex-col">
       {/* Page Header */}
@@ -239,20 +263,26 @@ export default function PlansTab() {
             <table className="w-full">
               <thead className="bg-muted">
                 <tr>
-                  <th className="text-left px-6 py-4 text-sm font-semibold text-foreground">Plan Name</th>
-                  <th className="text-left px-6 py-4 text-sm font-semibold text-foreground">Billing Cycle</th>
-                  <th className="text-left px-6 py-4 text-sm font-semibold text-foreground">Price</th>
-                  <th className="text-left px-6 py-4 text-sm font-semibold text-foreground">Max Clinics</th>
-                  <th className="text-left px-6 py-4 text-sm font-semibold text-foreground">Max Providers</th>
-                  <th className="text-left px-6 py-4 text-sm font-semibold text-foreground">Max Patients</th>
-                  <th className="text-left px-6 py-4 text-sm font-semibold text-foreground">AI Limit</th>
-                  <th className="text-left px-6 py-4 text-sm font-semibold text-foreground">Status</th>
-                  <th className="text-left px-6 py-4 text-sm font-semibold text-foreground">Created Date</th>
+                  {[
+                    ["name", "Plan Name"],
+                    ["billingCycle", "Billing Cycle"],
+                    ["price", "Price"],
+                    ["maxClinics", "Max Clinics"],
+                    ["maxProviders", "Max Providers"],
+                    ["maxPatients", "Max Patients"],
+                    ["aiLimit", "AI Limit"],
+                    ["status", "Status"],
+                    ["createdDate", "Created Date"],
+                  ].map(([field, label]) => (
+                    <th key={field} className="text-left px-6 py-4 text-sm font-semibold text-foreground">
+                      <button type="button" onClick={() => handleSort(field as SortField)} className="whitespace-nowrap" aria-label={`Sort by ${label}`}>{label}{getSortIcon(field as SortField)}</button>
+                    </th>
+                  ))}
                   <th className="text-left px-6 py-4 text-sm font-semibold text-foreground">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {mockPlans.map((plan) => (
+                {sortedPlans.map((plan) => (
                   <tr key={plan.id} className="border-t border-border hover:bg-muted/30 transition-colors">
                     <td className="px-6 py-4 text-sm font-medium text-foreground">{plan.name}</td>
                     <td className="px-6 py-4 text-sm text-muted-foreground">{plan.billingCycle}</td>
