@@ -7,12 +7,14 @@ import {
   Columns3,
   Download,
   Filter,
+  Mail,
   Plus,
   RefreshCw,
   Search,
   Users,
   X,
 } from "lucide-react";
+import { CardFooter, CardHeader, CardMetaRow, CardStatusPill, EnterpriseAvatar, EntityCard, PlainMetaLabel, ViewModeSwitcher } from "../../components/hb/listing";
 
 interface Clinic {
   id: string;
@@ -33,6 +35,7 @@ interface Clinic {
 
 type SortField = keyof Clinic;
 type SortOrder = "asc" | "desc" | null;
+type ViewMode = "grid" | "list" | "table";
 type ColumnKey =
   | "clinicName"
   | "ownerEmail"
@@ -93,24 +96,20 @@ function HeaderIconButton({ title, icon: Icon, active, badge, onClick }: { title
 
 function ClinicMark({ name }: { name: string }) {
   return (
-    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-xs font-semibold text-primary">
+    <EnterpriseAvatar className="text-primary">
       {name.split(" ").map((part) => part[0]).join("").slice(0, 2)}
-    </div>
+    </EnterpriseAvatar>
   );
 }
 
 function DotBadge({ value }: { value: string }) {
   const color = value === "Active" ? "bg-emerald-500" : value === "Suspended" ? "bg-amber-500" : "bg-red-500";
-  return (
-    <span className="inline-flex h-6 items-center gap-1.5 rounded-full border border-neutral-200 bg-white px-2 text-xs font-medium text-neutral-700 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-300">
-      <span className={`h-1.5 w-1.5 rounded-full ${color}`} />
-      {value}
-    </span>
-  );
+  const tone = value === "Active" ? "green" : value === "Suspended" ? "amber" : "gray";
+  return <CardStatusPill tone={tone}>{value}</CardStatusPill>;
 }
 
 function PlanBadge({ plan }: { plan: string }) {
-  return <span className="inline-flex h-6 items-center rounded-full border border-primary/20 bg-primary/5 px-2 text-xs font-medium text-primary">{plan}</span>;
+  return <PlainMetaLabel>{plan}</PlainMetaLabel>;
 }
 
 function ColumnPanel({ visibleColumns, onToggle, onClose }: { visibleColumns: Record<ColumnKey, boolean>; onToggle: (key: ColumnKey) => void; onClose: () => void }) {
@@ -194,6 +193,7 @@ function FilterPanel({
 }
 
 export default function ClinicReportPage() {
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [showSummary, setShowSummary] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [showColumnPanel, setShowColumnPanel] = useState(false);
@@ -354,10 +354,11 @@ export default function ClinicReportPage() {
           ) : (
             <HeaderIconButton title="Search" icon={Search} active={Boolean(searchQuery)} onClick={() => setIsSearchOpen(true)} />
           )}
-          <div className="relative">
+          <ViewModeSwitcher value={viewMode} onChange={(mode) => { setViewMode(mode); setCurrentPage(1); }} />
+          {viewMode === "table" ? <div className="relative">
             <HeaderIconButton title="Customized columns" icon={Columns3} active={showColumnPanel || visibleColumnCount < tableColumns.length} onClick={() => setShowColumnPanel((value) => !value)} />
             {showColumnPanel ? <ColumnPanel visibleColumns={visibleColumns} onToggle={toggleColumn} onClose={() => setShowColumnPanel(false)} /> : null}
-          </div>
+          </div> : null}
           <button type="button" onClick={handleExport} className="inline-flex h-10 items-center gap-2 rounded-lg border border-primary bg-primary px-4 text-sm font-medium text-white hover:bg-primary/90"><Download className="h-4 w-4" />Export Report</button>
           <HeaderIconButton title="Summary" icon={BarChart3} active={showSummary} onClick={() => setShowSummary((value) => !value)} />
           <HeaderIconButton title="Refresh" icon={RefreshCw} onClick={() => console.log("Clinic report refreshed")} />
@@ -390,6 +391,30 @@ export default function ClinicReportPage() {
       {filteredAndSortedData.length === 0 ? (
         <div className="rounded-lg border border-neutral-200 bg-white p-8 text-center dark:border-neutral-800 dark:bg-neutral-950"><Building2 className="mx-auto h-10 w-10 text-neutral-400" /><h3 className="mt-3 text-sm font-semibold">No clinics found</h3><p className="mt-1 text-sm text-neutral-500">Adjust search or filters to find matching clinic records.</p></div>
       ) : (
+        <>
+        {viewMode === "grid" ? (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {currentData.map((clinic) => (
+              <EntityCard key={clinic.id} selected={selectedRowIds.includes(clinic.id)}>
+                <CardHeader avatar={<ClinicMark name={clinic.clinicName} />} title={clinic.clinicName} subtitle={clinic.id} selected={selectedRowIds.includes(clinic.id)} onSelect={(checked) => toggleSelected(clinic.id, checked)} />
+                <div className="flex-1 space-y-2 text-sm">
+                  <CardMetaRow icon={Mail}>{clinic.ownerEmail}</CardMetaRow>
+                  <div className="flex items-center gap-2"><Building2 className="h-4 w-4 shrink-0 text-neutral-500" /><PlanBadge plan={clinic.plan} /></div>
+                  <CardMetaRow icon={Building2}>{clinic.branchCount} branches</CardMetaRow>
+                  <CardMetaRow icon={Users}>{clinic.providersCount} providers</CardMetaRow>
+                </div>
+                <CardFooter><DotBadge value={clinic.subscriptionStatus} /></CardFooter>
+              </EntityCard>
+            ))}
+          </div>
+        ) : null}
+        {viewMode === "list" ? (
+          <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
+            <div className="divide-y divide-neutral-100 dark:divide-neutral-800">{currentData.map((clinic) => <div key={clinic.id} className={`flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between ${selectedRowIds.includes(clinic.id) ? "bg-primary/5" : ""}`}><div className="flex min-w-0 items-center gap-3"><input type="checkbox" checked={selectedRowIds.includes(clinic.id)} onChange={(event) => toggleSelected(clinic.id, event.target.checked)} className="h-4 w-4 rounded border-neutral-300 accent-primary" /><ClinicMark name={clinic.clinicName} /><div className="min-w-0"><p className="truncate text-sm font-semibold">{clinic.clinicName}</p><p className="truncate text-xs text-neutral-500">{clinic.ownerEmail}</p></div></div><div className="flex flex-wrap items-center gap-2 text-sm"><PlanBadge plan={clinic.plan} /><DotBadge value={clinic.subscriptionStatus} /><span className="text-neutral-500">{clinic.providersCount} providers</span><span className="text-neutral-500">{clinic.patientsCount.toLocaleString()} patients</span></div></div>)}</div>
+            {renderPagination()}
+          </div>
+        ) : null}
+        {viewMode === "table" ? (
         <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
           <div className="overflow-x-auto">
             <table className="min-w-full border-collapse text-left">
@@ -415,6 +440,9 @@ export default function ClinicReportPage() {
           </div>
           {renderPagination()}
         </div>
+        ) : null}
+        {viewMode === "grid" ? renderPagination() : null}
+        </>
       )}
     </div>
   );

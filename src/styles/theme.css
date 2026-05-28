@@ -10,6 +10,11 @@
   --popover-foreground: #0A0A0A;
   --primary: #1766C2;
   --primary-foreground: #ffffff;
+  --primary-hover: #155BAD;
+  --primary-active: #124E94;
+  --primary-surface: #EAF2FF;
+  --primary-focus: rgb(23 102 194 / 0.24);
+  --primary-outline: #9CC3F0;
   --secondary: #F5F5F5;
   --secondary-foreground: #0A0A0A;
   --muted: #F5F5F5;
@@ -62,6 +67,11 @@
   --popover-foreground: oklch(0.985 0 0);
   --primary: oklch(0.985 0 0);
   --primary-foreground: oklch(0.205 0 0);
+  --primary-hover: oklch(0.922 0 0);
+  --primary-active: oklch(0.87 0 0);
+  --primary-surface: rgb(255 255 255 / 0.12);
+  --primary-focus: rgb(255 255 255 / 0.24);
+  --primary-outline: oklch(0.708 0 0);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
@@ -570,7 +580,31 @@
   }
 
   .clinic-admin-content [class*="bg-primary"][class*="text-white"] {
+    color: var(--primary-foreground) !important;
     box-shadow: none;
+  }
+
+  .clinic-admin-shell button[class*="bg-primary"][class*="text-white"]:hover,
+  .clinic-admin-content button[class*="bg-primary"][class*="text-white"]:hover {
+    background: var(--primary-hover) !important;
+  }
+
+  .clinic-admin-shell button[class*="bg-primary"][class*="text-white"]:active,
+  .clinic-admin-content button[class*="bg-primary"][class*="text-white"]:active {
+    background: var(--primary-active) !important;
+  }
+
+  .clinic-admin-shell :is(input, select, textarea):focus,
+  .clinic-admin-shell :is(input, select, textarea):focus-visible {
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 2px var(--primary-focus) !important;
+    outline: none !important;
+  }
+
+  .clinic-admin-shell [class*="border-primary"][class*="bg-primary/5"],
+  .clinic-admin-shell [class*="border-primary/20"][class*="bg-primary/5"] {
+    border-color: var(--primary-outline) !important;
+    background: var(--primary-surface) !important;
   }
 
   @media (min-width: 1600px) {

@@ -7,7 +7,6 @@ import {
   LogOut, 
   Bell,
   Check,
-  Activity,
   ChevronDown,
   Receipt,
   DollarSign,
@@ -28,6 +27,186 @@ import {
 import { Button } from "../components/ui/button";
 import { Avatar, AvatarFallback } from "../components/ui/avatar";
 import { useEffect, useState } from "react";
+import spineCloudLogo from "../assets/spinecloudiq-logo.png";
+
+type ThemeMode = "light" | "dark";
+
+type ThemeTokens = {
+  primary: string;
+  primaryForeground: string;
+  hover: string;
+  active: string;
+  surface: string;
+  focus: string;
+  outline: string;
+  charts: [string, string, string, string, string];
+};
+
+type ThemeDefinition = {
+  id: string;
+  name: string;
+  color: string;
+  light: ThemeTokens;
+  dark: ThemeTokens;
+};
+
+const THEME_STORAGE_KEY = "spinecloudiq-theme";
+const MODE_STORAGE_KEY = "spinecloudiq-color-mode";
+
+const themes: ThemeDefinition[] = [
+  {
+    id: "spine-blue",
+    name: "Spine Blue",
+    color: "#1766C2",
+    light: {
+      primary: "#1766C2",
+      primaryForeground: "#ffffff",
+      hover: "#155BAD",
+      active: "#124E94",
+      surface: "#EAF2FF",
+      focus: "rgb(23 102 194 / 0.24)",
+      outline: "#9CC3F0",
+      charts: ["#1766C2", "#3B82F6", "#60A5FA", "#93C5FD", "#DBEAFE"],
+    },
+    dark: {
+      primary: "#5FA8F5",
+      primaryForeground: "#06182D",
+      hover: "#7DB9F7",
+      active: "#9BCAF9",
+      surface: "rgb(95 168 245 / 0.14)",
+      focus: "rgb(95 168 245 / 0.32)",
+      outline: "#2F80C3",
+      charts: ["#5FA8F5", "#2F80C3", "#93C5FD", "#1D4ED8", "#BFDBFE"],
+    },
+  },
+  {
+    id: "cloud-blue",
+    name: "Cloud Blue",
+    color: "#2F80C3",
+    light: {
+      primary: "#2F80C3",
+      primaryForeground: "#ffffff",
+      hover: "#2A73AF",
+      active: "#24659B",
+      surface: "#EAF4FB",
+      focus: "rgb(47 128 195 / 0.24)",
+      outline: "#9BC8E8",
+      charts: ["#2F80C3", "#58A1D6", "#7DBBE5", "#AED7EF", "#DDEFF8"],
+    },
+    dark: {
+      primary: "#6BB6EA",
+      primaryForeground: "#062033",
+      hover: "#86C6EF",
+      active: "#A3D6F4",
+      surface: "rgb(107 182 234 / 0.14)",
+      focus: "rgb(107 182 234 / 0.32)",
+      outline: "#2F80C3",
+      charts: ["#6BB6EA", "#2F80C3", "#A3D6F4", "#1F5F91", "#DDEFF8"],
+    },
+  },
+  {
+    id: "spine-lime",
+    name: "Spine Lime",
+    color: "#9BBE3D",
+    light: {
+      primary: "#6F8F1F",
+      primaryForeground: "#ffffff",
+      hover: "#637F1B",
+      active: "#567018",
+      surface: "#F2F7E3",
+      focus: "rgb(155 190 61 / 0.28)",
+      outline: "#C6DA82",
+      charts: ["#6F8F1F", "#9BBE3D", "#B8D56A", "#D5E8A6", "#EEF6D6"],
+    },
+    dark: {
+      primary: "#B5D766",
+      primaryForeground: "#182303",
+      hover: "#C4E17E",
+      active: "#D2E99A",
+      surface: "rgb(181 215 102 / 0.14)",
+      focus: "rgb(181 215 102 / 0.30)",
+      outline: "#8EAD35",
+      charts: ["#B5D766", "#9BBE3D", "#D2E99A", "#6F8F1F", "#EEF6D6"],
+    },
+  },
+  {
+    id: "emerald",
+    name: "Emerald",
+    color: "#10B981",
+    light: {
+      primary: "#059669",
+      primaryForeground: "#ffffff",
+      hover: "#047857",
+      active: "#065F46",
+      surface: "#ECFDF5",
+      focus: "rgb(16 185 129 / 0.24)",
+      outline: "#86EFAC",
+      charts: ["#059669", "#10B981", "#34D399", "#6EE7B7", "#D1FAE5"],
+    },
+    dark: {
+      primary: "#34D399",
+      primaryForeground: "#032416",
+      hover: "#6EE7B7",
+      active: "#A7F3D0",
+      surface: "rgb(52 211 153 / 0.14)",
+      focus: "rgb(52 211 153 / 0.30)",
+      outline: "#059669",
+      charts: ["#34D399", "#10B981", "#6EE7B7", "#047857", "#D1FAE5"],
+    },
+  },
+  {
+    id: "violet",
+    name: "Violet",
+    color: "#8B5CF6",
+    light: {
+      primary: "#7C3AED",
+      primaryForeground: "#ffffff",
+      hover: "#6D28D9",
+      active: "#5B21B6",
+      surface: "#F3EFFF",
+      focus: "rgb(139 92 246 / 0.24)",
+      outline: "#C4B5FD",
+      charts: ["#8B5CF6", "#A78BFA", "#C4B5FD", "#DDD6FE", "#EDE9FE"],
+    },
+    dark: {
+      primary: "#A78BFA",
+      primaryForeground: "#1E123D",
+      hover: "#BCA7FB",
+      active: "#CFC2FD",
+      surface: "rgb(167 139 250 / 0.14)",
+      focus: "rgb(167 139 250 / 0.30)",
+      outline: "#7C3AED",
+      charts: ["#A78BFA", "#8B5CF6", "#C4B5FD", "#6D28D9", "#EDE9FE"],
+    },
+  },
+  {
+    id: "amber",
+    name: "Amber",
+    color: "#F59E0B",
+    light: {
+      primary: "#B45309",
+      primaryForeground: "#ffffff",
+      hover: "#92400E",
+      active: "#78350F",
+      surface: "#FFF7E6",
+      focus: "rgb(245 158 11 / 0.26)",
+      outline: "#FCD34D",
+      charts: ["#B45309", "#F59E0B", "#FBBF24", "#FCD34D", "#FEF3C7"],
+    },
+    dark: {
+      primary: "#FBBF24",
+      primaryForeground: "#271600",
+      hover: "#FCD34D",
+      active: "#FDE68A",
+      surface: "rgb(251 191 36 / 0.14)",
+      focus: "rgb(251 191 36 / 0.30)",
+      outline: "#D97706",
+      charts: ["#FBBF24", "#F59E0B", "#FCD34D", "#B45309", "#FEF3C7"],
+    },
+  },
+];
+
+const visibleThemes = themes.filter((theme) => theme.id !== "emerald");
 
 export default function DashboardLayout() {
   const navigate = useNavigate();
@@ -37,32 +216,52 @@ export default function DashboardLayout() {
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showAppearance, setShowAppearance] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const [currentTheme, setCurrentTheme] = useState("spine-blue");
+  const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem(MODE_STORAGE_KEY) === "dark");
+  const [currentTheme, setCurrentTheme] = useState(() => localStorage.getItem(THEME_STORAGE_KEY) || "spine-blue");
 
-  const themes = [
-    { id: "spine-blue", name: "Spine Blue", color: "#1766C2" },
-    { id: "emerald", name: "Emerald", color: "#10B981" },
-    { id: "violet", name: "Violet", color: "#8B5CF6" },
-    { id: "amber", name: "Amber", color: "#F59E0B" },
-  ];
-
-  const applyTheme = (themeId: string) => {
+  const applyTheme = (themeId: string, mode: ThemeMode = isDarkMode ? "dark" : "light") => {
     const nextTheme = themes.find((theme) => theme.id === themeId) || themes[0];
+    const tokens = nextTheme[mode];
     setCurrentTheme(nextTheme.id);
-    document.documentElement.style.setProperty("--primary", nextTheme.color);
-    document.documentElement.style.setProperty("--ring", nextTheme.color);
-    document.documentElement.style.setProperty("--chart-1", nextTheme.color);
-    document.documentElement.style.setProperty("--sidebar-primary", nextTheme.color);
+    localStorage.setItem(THEME_STORAGE_KEY, nextTheme.id);
+    document.documentElement.style.setProperty("--primary", tokens.primary);
+    document.documentElement.style.setProperty("--primary-foreground", tokens.primaryForeground);
+    document.documentElement.style.setProperty("--primary-hover", tokens.hover);
+    document.documentElement.style.setProperty("--primary-active", tokens.active);
+    document.documentElement.style.setProperty("--primary-surface", tokens.surface);
+    document.documentElement.style.setProperty("--primary-focus", tokens.focus);
+    document.documentElement.style.setProperty("--primary-outline", tokens.outline);
+    document.documentElement.style.setProperty("--ring", tokens.primary);
+    document.documentElement.style.setProperty("--chart-1", tokens.charts[0]);
+    document.documentElement.style.setProperty("--chart-2", tokens.charts[1]);
+    document.documentElement.style.setProperty("--chart-3", tokens.charts[2]);
+    document.documentElement.style.setProperty("--chart-4", tokens.charts[3]);
+    document.documentElement.style.setProperty("--chart-5", tokens.charts[4]);
+    document.documentElement.style.setProperty("--sidebar-primary", tokens.primary);
+    document.documentElement.style.setProperty("--sidebar-ring", tokens.primary);
   };
 
   useEffect(() => {
-    applyTheme("spine-blue");
+    applyTheme(currentTheme, isDarkMode ? "dark" : "light");
   }, []);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", isDarkMode);
-  }, [isDarkMode]);
+    localStorage.setItem(MODE_STORAGE_KEY, isDarkMode ? "dark" : "light");
+    applyTheme(currentTheme, isDarkMode ? "dark" : "light");
+  }, [isDarkMode, currentTheme]);
+
+  useEffect(() => {
+    const syncSidebarForViewport = () => {
+      if (window.innerWidth < 768) {
+        setSidebarCollapsed(true);
+      }
+    };
+
+    syncSidebarForViewport();
+    window.addEventListener("resize", syncSidebarForViewport);
+    return () => window.removeEventListener("resize", syncSidebarForViewport);
+  }, []);
 
   interface MenuItem {
     icon: any;
@@ -129,14 +328,22 @@ export default function DashboardLayout() {
       {/* Sidebar */}
       <aside className={`bg-white dark:bg-neutral-950 border-r border-neutral-200 dark:border-neutral-800 flex flex-col transition-all duration-300 ${sidebarCollapsed ? 'w-[64px]' : 'w-[256px]'}`}>
         {/* Logo */}
-        <div className={`h-[48px] border-b border-neutral-200 dark:border-neutral-800 flex items-center ${sidebarCollapsed ? 'px-3 justify-center' : 'px-3 gap-2.5'}`}>
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
-            <Activity className="w-4 h-4 text-white" strokeWidth={2.5} />
-          </div>
-          {!sidebarCollapsed && (
-            <div className="overflow-hidden">
-              <h1 className="text-sm font-semibold leading-5 text-neutral-900 dark:text-white">SpineCloudIQ</h1>
-              <p className="text-[11px] leading-4 text-neutral-500 dark:text-neutral-400">Super Admin</p>
+        <div className={`border-b border-neutral-200 dark:border-neutral-800 flex ${sidebarCollapsed ? 'h-[56px] items-center justify-center px-3' : 'h-[84px] flex-col justify-center px-3'}`}>
+          {sidebarCollapsed ? (
+            <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-lg bg-white">
+              <img
+                src={spineCloudLogo}
+                alt="SpineCloud IQ"
+                className="h-8 w-8 object-cover object-left"
+              />
+            </div>
+          ) : (
+            <div className="flex w-full min-w-0 flex-col items-start">
+              <img
+                src={spineCloudLogo}
+                alt="SpineCloud IQ"
+                className="h-14 w-full object-contain object-left"
+              />
             </div>
           )}
         </div>
@@ -234,7 +441,7 @@ export default function DashboardLayout() {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         {/* Top Header */}
         <header className="h-[48px] bg-white dark:bg-neutral-950 border-b border-neutral-200 dark:border-neutral-800 px-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -310,35 +517,37 @@ export default function DashboardLayout() {
               {showAppearance && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setShowAppearance(false)} />
-                  <div className="absolute right-0 top-full mt-2 w-72 bg-card border border-border rounded-lg shadow-lg z-20 overflow-hidden">
-                    <div className="px-3 py-2.5 border-b border-border">
-                      <div className="text-sm font-semibold text-foreground">Appearance</div>
+                  <div className="absolute right-0 top-full mt-2 w-72 overflow-hidden rounded-lg border border-neutral-200 bg-white text-neutral-950 shadow-lg z-20 dark:border-neutral-800 dark:bg-neutral-950 dark:text-white">
+                    <div className="px-3 py-2.5 border-b border-neutral-200 dark:border-neutral-800">
+                      <div className="text-sm font-semibold text-neutral-950 dark:text-white">Appearance</div>
                     </div>
 
-                    <div className="p-3 border-b border-border">
-                      <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                    <div className="p-3 border-b border-neutral-200 dark:border-neutral-800">
+                      <div className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider mb-2 dark:text-neutral-400">
                         Color Theme
                       </div>
                       <div className="space-y-0.5">
-                        {themes.map((theme) => (
+                        {visibleThemes.map((theme) => (
                           <button
                             key={theme.id}
                             onClick={() => applyTheme(theme.id)}
-                            className="w-full px-2 py-1.5 text-left hover:bg-muted rounded-lg transition-colors flex items-center gap-2.5"
+                            className={`w-full px-2 py-1.5 text-left rounded-lg transition-colors flex items-center gap-2.5 ${
+                              isDarkMode ? "text-neutral-100 hover:bg-neutral-900" : "text-neutral-800 hover:bg-neutral-100"
+                            }`}
                           >
                             <span
                               className="w-3 h-3 rounded-full flex-shrink-0 border border-black/10 dark:border-white/10"
                               style={{ backgroundColor: theme.color }}
                             />
-                            <span className="flex-1 text-sm text-foreground">{theme.name}</span>
-                            {currentTheme === theme.id && <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />}
+                            <span className="flex-1 text-sm font-medium">{theme.name}</span>
+                            {currentTheme === theme.id && <Check className="w-3.5 h-3.5 text-primary flex-shrink-0 dark:text-primary" />}
                           </button>
                         ))}
                       </div>
                     </div>
 
                     <div className="p-3">
-                      <div className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                      <div className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider mb-2 dark:text-neutral-400">
                         Mode
                       </div>
                       <div className="flex gap-1.5">
@@ -346,8 +555,8 @@ export default function DashboardLayout() {
                           onClick={() => setIsDarkMode(false)}
                           className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-sm border transition-colors ${
                             !isDarkMode
-                              ? "bg-primary/10 border-primary/20 text-primary"
-                              : "border-border text-muted-foreground hover:bg-muted"
+                              ? "bg-primary/10 border-primary/30 text-primary"
+                              : "border-neutral-800 text-neutral-300 hover:bg-neutral-900"
                           }`}
                         >
                           <Sun className="w-3.5 h-3.5" />
@@ -357,8 +566,8 @@ export default function DashboardLayout() {
                           onClick={() => setIsDarkMode(true)}
                           className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-sm border transition-colors ${
                             isDarkMode
-                              ? "bg-primary/10 border-primary/20 text-primary"
-                              : "border-border text-muted-foreground hover:bg-muted"
+                              ? "bg-primary/10 border-primary/30 text-primary"
+                              : "border-neutral-200 text-neutral-600 hover:bg-neutral-100"
                           }`}
                         >
                           <Moon className="w-3.5 h-3.5" />

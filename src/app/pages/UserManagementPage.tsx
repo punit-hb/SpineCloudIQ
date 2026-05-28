@@ -3,14 +3,13 @@ import {
   AlertCircle,
   ArrowUpDown,
   BarChart3,
+  Calendar,
   Check,
   Download,
   Edit,
   FileSpreadsheet,
   FileText,
   Filter,
-  Grid3X3,
-  List,
   Mail,
   MoreVertical,
   Plus,
@@ -19,10 +18,10 @@ import {
   Search,
   Shield,
   SlidersHorizontal,
-  Table2,
   Trash2,
   X,
 } from "lucide-react";
+import { CardFooter, CardHeader, CardMetaRow, CardStatusPill, EnterpriseAvatar, EntityCard, OutlinePill, ViewModeSwitcher } from "../components/hb/listing";
 import { Button } from "../components/ui/button";
 import { Checkbox } from "../components/ui/checkbox";
 import { Input } from "../components/ui/input";
@@ -119,64 +118,22 @@ function HeaderIconButton({
   );
 }
 
-function ViewModeSwitcher({ viewMode, onChange }: { viewMode: ViewMode; onChange: (mode: ViewMode) => void }) {
-  const items: { id: ViewMode; icon: ComponentType<{ className?: string }>; title: string }[] = [
-    { id: "grid", icon: Grid3X3, title: "Grid View" },
-    { id: "list", icon: List, title: "List View" },
-    { id: "table", icon: Table2, title: "Table View" },
-  ];
-
-  return (
-    <div className="flex h-10 overflow-hidden rounded-lg border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
-      {items.map(({ id, icon: Icon, title }) => (
-        <button
-          key={id}
-          type="button"
-          title={title}
-          onClick={() => onChange(id)}
-          className={`flex h-10 w-10 items-center justify-center transition-colors ${
-            viewMode === id
-              ? "bg-neutral-100 text-neutral-900 dark:bg-neutral-800 dark:text-white"
-              : "text-neutral-500 hover:bg-neutral-50 dark:text-neutral-400 dark:hover:bg-neutral-900"
-          }`}
-        >
-          <Icon className="h-4 w-4" />
-        </button>
-      ))}
-    </div>
-  );
-}
-
 function StatusBadge({ status }: { status: UserData["status"] }) {
-  const dotClass = {
-    Active: "bg-emerald-500",
-    Pending: "bg-amber-500",
-    Inactive: "bg-neutral-400",
-  }[status];
-
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200 bg-white px-2 py-0.5 text-xs text-neutral-600 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-400">
-      <span className={`h-1.5 w-1.5 rounded-full ${dotClass}`} />
-      {status}
-    </span>
-  );
+  const tone = status === "Active" ? "green" : status === "Pending" ? "amber" : "gray";
+  return <CardStatusPill tone={tone}>{status}</CardStatusPill>;
 }
 
 function RoleBadge({ role }: { role: string }) {
   return (
-    <span className="inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/5 px-2 py-0.5 text-xs font-medium text-primary">
-      <Shield className="h-3 w-3" />
-      {role}
-    </span>
+    <OutlinePill showDot={false} className="gap-1.5 px-2.5 text-primary">
+      <Shield className="h-3 w-3 shrink-0" />
+      <span className="whitespace-nowrap">{role}</span>
+    </OutlinePill>
   );
 }
 
 function AvatarMark({ user }: { user: UserData }) {
-  return (
-    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-xs font-semibold text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
-      {initials(user)}
-    </div>
-  );
+  return <EnterpriseAvatar>{initials(user)}</EnterpriseAvatar>;
 }
 
 function FilterPanel({
@@ -698,7 +655,7 @@ export default function UserManagementPage() {
       <div className="max-w-full">
         <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h1 className="mb-2 text-[32px] font-semibold leading-[40px] text-neutral-900 dark:text-white">User Management</h1>
+            <h1 className="mb-2 text-2xl font-semibold leading-8 text-neutral-900 dark:text-white">User Management</h1>
             <p className="text-sm text-neutral-600 dark:text-neutral-400">
               Manage platform administrators, support representatives, and read-only viewers.
             </p>
@@ -765,7 +722,7 @@ export default function UserManagementPage() {
               )}
             </div>
 
-            <ViewModeSwitcher viewMode={viewMode} onChange={setViewMode} />
+            <ViewModeSwitcher value={viewMode} onChange={setViewMode} />
           </div>
         </div>
 
@@ -777,11 +734,11 @@ export default function UserManagementPage() {
               { label: "Pending Invites", value: pendingCount, helper: "Awaiting signup" },
               { label: "Inactive Users", value: inactiveCount, helper: "Access disabled" },
             ].map((item) => (
-              <div key={item.label} className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
-                <p className="mb-1 text-xs text-neutral-500 dark:text-neutral-400">{item.label}</p>
-                <div className="flex items-end justify-between gap-3">
+              <div key={item.label} className="flex min-h-[140px] flex-col justify-between rounded-lg border border-neutral-200 bg-white p-5 shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
+                <p className="text-xs font-semibold uppercase text-neutral-500 dark:text-neutral-400">{item.label}</p>
+                <div className="flex items-center justify-between gap-4">
                   <p className="text-2xl font-semibold text-neutral-900 dark:text-white">{item.value}</p>
-                  <span className="rounded-full border border-neutral-200 bg-neutral-50 px-2 py-0.5 text-xs text-neutral-500 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-400">{item.helper}</span>
+                  <span className="inline-flex h-8 shrink-0 items-center whitespace-nowrap rounded-full border border-neutral-200 bg-neutral-50 px-3 text-sm text-neutral-600 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300">{item.helper}</span>
                 </div>
               </div>
             ))}
@@ -793,30 +750,15 @@ export default function UserManagementPage() {
             {currentData.length > 0 ? currentData.map((user) => {
               const selected = selectedRowIds.includes(user.id);
               return (
-                <div key={user.id} className={`flex min-h-[236px] flex-col rounded-lg border bg-white p-4 shadow-sm transition-colors dark:bg-neutral-950 ${selected ? "border-primary/50 bg-primary/5" : "border-neutral-200 dark:border-neutral-800"}`}>
-                  <div className="mb-4 flex items-start justify-between gap-3">
-                    <div className="flex min-w-0 items-start gap-3">
-                      <AvatarMark user={user} />
-                      <div className="min-w-0">
-                        <h3 className="truncate text-base font-semibold text-neutral-900 dark:text-white">{fullName(user)}</h3>
-                        <p className="mt-1 truncate text-sm text-neutral-500 dark:text-neutral-400">{user.id}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <input type="checkbox" checked={selected} onChange={(event) => handleSelectRow(user.id, event.target.checked)} className="h-4 w-4 cursor-pointer rounded border-neutral-300 accent-primary" title="Select" />
-                      {renderActions(user)}
-                    </div>
+                <EntityCard key={user.id} selected={selected}>
+                  <CardHeader avatar={<AvatarMark user={user} />} title={fullName(user)} subtitle={user.id} selected={selected} onSelect={(checked) => handleSelectRow(user.id, checked)} actions={renderActions(user)} />
+                  <div className="flex-1 space-y-2 text-sm">
+                    <CardMetaRow icon={Mail}>{user.email}</CardMetaRow>
+                    <div className="flex items-center gap-2"><Shield className="h-4 w-4 shrink-0 text-neutral-500" /><RoleBadge role={user.role} /></div>
+                    <CardMetaRow icon={Calendar}>{formatDate(user.lastLogin)}</CardMetaRow>
                   </div>
-                  <div className="flex-1 space-y-2.5 text-sm">
-                    <div className="min-w-0"><span className="text-neutral-500 dark:text-neutral-400">Email</span><p className="truncate font-medium text-neutral-800 dark:text-neutral-200">{user.email}</p></div>
-                    <div className="flex items-center justify-between gap-2"><span className="text-neutral-500">Role</span><RoleBadge role={user.role} /></div>
-                    <div className="flex items-center justify-between gap-2"><span className="text-neutral-500">Last Login</span><span className="font-medium text-neutral-700 dark:text-neutral-300">{formatDate(user.lastLogin)}</span></div>
-                  </div>
-                  <div className="mt-4 flex min-h-10 items-center justify-between border-t border-neutral-100 pt-3 dark:border-neutral-800">
-                    <span className="text-sm text-neutral-500">Status</span>
-                    <StatusBadge status={user.status} />
-                  </div>
-                </div>
+                  <CardFooter><StatusBadge status={user.status} /></CardFooter>
+                </EntityCard>
               );
             }) : <div className="md:col-span-2 xl:col-span-4">{emptyState}</div>}
           </div>

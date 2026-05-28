@@ -3,7 +3,9 @@ import {
   AlertCircle,
   ArrowUpDown,
   BarChart3,
+  Calendar,
   Check,
+  DollarSign,
   Download,
   FileSpreadsheet,
   FileText,
@@ -16,6 +18,7 @@ import {
   TrendingUp,
   X,
 } from "lucide-react";
+import { CardFooter, CardHeader, CardMetaRow, CardStatusPill, EnterpriseAvatar, EntityCard, OutlinePill, ViewModeSwitcher } from "../components/hb/listing";
 import { Checkbox } from "../components/ui/checkbox";
 
 interface RevenueRecord {
@@ -97,12 +100,7 @@ function HeaderIconButton({
 }
 
 function GrowthBadge({ value }: { value: string }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200 bg-white px-2 py-0.5 text-xs text-neutral-600 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-400">
-      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-      {value}
-    </span>
-  );
+  return <CardStatusPill tone="green">{value}</CardStatusPill>;
 }
 
 function RevenuePill({ children, tone = "neutral" }: { children: React.ReactNode; tone?: "neutral" | "positive" | "negative" }) {
@@ -113,7 +111,7 @@ function RevenuePill({ children, tone = "neutral" }: { children: React.ReactNode
         ? "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/20 dark:text-red-400"
         : "border-neutral-200 bg-neutral-50 text-neutral-700 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300";
 
-  return <span className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-medium ${className}`}>{children}</span>;
+  return <OutlinePill className={className}>{children}</OutlinePill>;
 }
 
 function FilterPanel({
@@ -378,7 +376,7 @@ export default function RevenuePage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [showSummary, setShowSummary] = useState(true);
   const [selectedRowIds, setSelectedRowIds] = useState<number[]>([]);
-  const [viewMode] = useState<ViewMode>("table");
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [showFilters, setShowFilters] = useState(false);
   const [showColumns, setShowColumns] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
@@ -565,7 +563,7 @@ export default function RevenuePage() {
         <div className="mb-6">
           <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <h1 className="mb-2 text-[32px] font-semibold leading-[40px] text-neutral-900 dark:text-white">
+              <h1 className="mb-2 text-2xl font-semibold leading-8 text-neutral-900 dark:text-white">
                 Revenue Analytics
               </h1>
               <p className="text-sm text-neutral-600 dark:text-neutral-400">
@@ -641,6 +639,8 @@ export default function RevenuePage() {
                   />
                 </div>
               )}
+
+              <ViewModeSwitcher value={viewMode} onChange={(mode) => { setViewMode(mode); setCurrentPage(1); }} />
 
               <button
                 type="button"
@@ -737,55 +737,16 @@ export default function RevenuePage() {
               ? currentData.map((item) => {
                   const selected = selectedRowIds.includes(item.id);
                   return (
-                    <div
-                      key={item.id}
-                      className={`flex min-h-[236px] flex-col rounded-lg border bg-white p-4 shadow-sm transition-colors dark:bg-neutral-950 ${
-                        selected ? "border-primary/50 bg-primary/5" : "border-neutral-200 dark:border-neutral-800"
-                      }`}
-                    >
-                      <div className="mb-4 flex items-start justify-between gap-3">
-                        <div className="flex min-w-0 items-start gap-3">
-                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-neutral-100 text-primary dark:bg-neutral-900">
-                            <TrendingUp className="h-4 w-4" />
-                          </div>
-                          <div className="min-w-0">
-                          <p className="truncate text-base font-semibold text-neutral-900 dark:text-white">{item.month}</p>
-                          <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                            {item.subscriptions.toLocaleString()} subscriptions
-                          </p>
-                          </div>
-                        </div>
-                        <input
-                          type="checkbox"
-                          checked={selected}
-                          onChange={(event) => handleSelectRow(item.id, event.target.checked)}
-                          className="h-4 w-4 cursor-pointer rounded border-neutral-300 accent-primary"
-                          title="Select"
-                        />
+                    <EntityCard key={item.id} selected={selected}>
+                      <CardHeader avatar={<EnterpriseAvatar icon={TrendingUp} className="text-primary" />} title={item.month} subtitle={`${item.subscriptions.toLocaleString()} subscriptions`} selected={selected} onSelect={(checked) => handleSelectRow(item.id, checked)} />
+                      <div className="flex-1 space-y-2 text-sm">
+                        <CardMetaRow icon={DollarSign}>{item.totalRevenue}</CardMetaRow>
+                        <div className="flex items-center gap-2"><TrendingUp className="h-4 w-4 shrink-0 text-neutral-500" /><RevenuePill tone="positive">{item.newRevenue}</RevenuePill></div>
+                        <div className="flex items-center gap-2"><DollarSign className="h-4 w-4 shrink-0 text-neutral-500" /><RevenuePill tone="negative">{item.churnRevenue}</RevenuePill></div>
+                        <CardMetaRow icon={Calendar}>Net {item.netGrowth}</CardMetaRow>
                       </div>
-                      <div className="flex-1 space-y-2.5 text-sm">
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-neutral-500 dark:text-neutral-400">Total Revenue</span>
-                          <span className="font-semibold text-neutral-900 dark:text-white">{item.totalRevenue}</span>
-                        </div>
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-neutral-500 dark:text-neutral-400">New Revenue</span>
-                          <RevenuePill tone="positive">{item.newRevenue}</RevenuePill>
-                        </div>
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-neutral-500 dark:text-neutral-400">Churn Revenue</span>
-                          <RevenuePill tone="negative">{item.churnRevenue}</RevenuePill>
-                        </div>
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-neutral-500 dark:text-neutral-400">Net Growth</span>
-                          <span className="font-semibold text-neutral-900 dark:text-white">{item.netGrowth}</span>
-                        </div>
-                      </div>
-                      <div className="mt-4 flex min-h-10 items-center justify-between border-t border-neutral-100 pt-3 dark:border-neutral-800">
-                        <span className="text-sm text-neutral-500 dark:text-neutral-400">Growth</span>
-                        <GrowthBadge value={item.growthRate} />
-                      </div>
-                    </div>
+                      <CardFooter><GrowthBadge value={item.growthRate} /></CardFooter>
+                    </EntityCard>
                   );
                 })
               : <div className="md:col-span-2 xl:col-span-4">{emptyState}</div>}

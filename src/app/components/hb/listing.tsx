@@ -62,6 +62,145 @@ export function SecondaryButton({ icon: Icon, children, className = '', ...p }: 
 }
 
 // ── IconButton ────────────────────────────────────────────
+type StatusTone = 'green' | 'red' | 'amber' | 'blue' | 'gray';
+
+const statusToneClass: Record<StatusTone, { pill: string; dot: string }> = {
+  green: { pill: 'border-emerald-300 bg-emerald-50/40 text-neutral-700 dark:border-emerald-700 dark:bg-emerald-950/10 dark:text-neutral-300', dot: 'bg-emerald-500' },
+  red: { pill: 'border-red-300 bg-red-50/40 text-neutral-700 dark:border-red-700 dark:bg-red-950/10 dark:text-neutral-300', dot: 'bg-red-500' },
+  amber: { pill: 'border-amber-300 bg-amber-50/40 text-neutral-700 dark:border-amber-700 dark:bg-amber-950/10 dark:text-neutral-300', dot: 'bg-amber-500' },
+  blue: { pill: 'border-blue-300 bg-blue-50/40 text-neutral-700 dark:border-blue-700 dark:bg-blue-950/10 dark:text-neutral-300', dot: 'bg-blue-500' },
+  gray: { pill: 'border-neutral-300 bg-neutral-50/40 text-neutral-700 dark:border-neutral-700 dark:bg-neutral-900/20 dark:text-neutral-300', dot: 'bg-neutral-400' },
+};
+
+export function EnterpriseAvatar({ children, icon: Icon, className = '' }: { children?: React.ReactNode; icon?: React.ComponentType<{ className?: string }>; className?: string }) {
+  return (
+    <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-neutral-200 bg-neutral-100 text-sm font-semibold text-neutral-700 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300 ${className}`}>
+      {Icon ? <Icon className="h-4 w-4" /> : children}
+    </div>
+  );
+}
+
+export function AvatarInitial({ children, icon: Icon, className = '' }: { children?: React.ReactNode; icon?: React.ComponentType<{ className?: string }>; className?: string }) {
+  return <EnterpriseAvatar icon={Icon} className={className}>{children}</EnterpriseAvatar>;
+}
+
+export function CardMetaRow({ icon: Icon, children }: { icon: React.ComponentType<{ className?: string }>; children: React.ReactNode }) {
+  return (
+    <div className="flex min-w-0 items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
+      <Icon className="h-4 w-4 shrink-0 text-neutral-500 dark:text-neutral-500" />
+      <span className="min-w-0 truncate">{children}</span>
+    </div>
+  );
+}
+
+export function CardHeader({
+  avatar,
+  title,
+  subtitle,
+  selected,
+  onSelect,
+  actions,
+}: {
+  avatar: React.ReactNode;
+  title: React.ReactNode;
+  subtitle?: React.ReactNode;
+  selected?: boolean;
+  onSelect?: (checked: boolean) => void;
+  actions?: React.ReactNode;
+}) {
+  return (
+    <div className="mb-3 flex items-start justify-between gap-3">
+      <div className="flex min-w-0 items-center gap-3">
+        {avatar}
+        <div className="min-w-0">
+          <h3 className="truncate text-base font-semibold leading-6 text-neutral-950 dark:text-white">{title}</h3>
+          {subtitle ? <p className="truncate text-sm leading-5 text-neutral-500 dark:text-neutral-400">{subtitle}</p> : null}
+        </div>
+      </div>
+      {(onSelect || actions) ? (
+        <div className="flex shrink-0 items-center gap-2" onClick={(event) => event.stopPropagation()}>
+          {onSelect ? (
+            <input
+              type="checkbox"
+              checked={Boolean(selected)}
+              onChange={(event) => onSelect(event.target.checked)}
+              className="h-4 w-4 rounded border-neutral-300 accent-primary"
+              title="Select"
+            />
+          ) : null}
+          {actions}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+export function CardFooter({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`mt-3 flex items-center justify-end gap-2 border-t border-neutral-100 pt-3 dark:border-neutral-800 ${className}`}>
+      {children}
+    </div>
+  );
+}
+
+export function OutlinePill({
+  children,
+  className = '',
+  dotClass = 'bg-neutral-400',
+  showDot = true,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  dotClass?: string;
+  showDot?: boolean;
+}) {
+  return (
+    <span className={`inline-flex h-7 items-center justify-center gap-1.5 rounded-full border border-neutral-200 bg-white px-2.5 text-xs font-normal leading-none text-neutral-700 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-300 ${className}`}>
+      {showDot ? <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${dotClass}`} /> : null}
+      <span className="inline-flex items-center gap-1.5 leading-none">{children}</span>
+    </span>
+  );
+}
+
+export function PlainMetaLabel({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return <span className={`text-sm font-medium leading-none text-neutral-700 dark:text-neutral-300 ${className}`}>{children}</span>;
+}
+
+export function CardStatusPill({ children, tone = 'gray' }: { children: React.ReactNode; tone?: StatusTone }) {
+  const config = statusToneClass[tone];
+  return (
+    <span className={`inline-flex h-7 items-center justify-center gap-1.5 rounded-full border px-2.5 text-xs font-normal leading-none ${config.pill}`}>
+      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${config.dot}`} />
+      <span className="leading-none">{children}</span>
+    </span>
+  );
+}
+
+export function StatusBadge({ children, tone = 'gray' }: { children: React.ReactNode; tone?: StatusTone }) {
+  return <CardStatusPill tone={tone}>{children}</CardStatusPill>;
+}
+
+export function EntityCard({
+  children,
+  selected = false,
+  onClick,
+  className = '',
+}: {
+  children: React.ReactNode;
+  selected?: boolean;
+  onClick?: () => void;
+  className?: string;
+}) {
+  return (
+    <div
+      onClick={onClick}
+      className={`flex min-h-[204px] min-w-0 flex-col rounded-lg border border-neutral-200 bg-white p-4 transition-colors dark:border-neutral-800 dark:bg-neutral-950 dark:hover:border-neutral-700 ${onClick ? 'cursor-pointer hover:border-neutral-300' : ''} ${selected ? 'ring-2 ring-primary/20' : ''} ${className}`}
+    >
+      {children}
+    </div>
+  );
+}
+
 interface MenuItem { icon?: React.ComponentType<{ className?: string }>; label: string; onClick: () => void; variant?: 'destructive'; }
 interface IconBtnProps { icon: React.ComponentType<{ className?: string }>; title: string; onClick?: () => void; menuItems?: MenuItem[]; className?: string; active?: boolean; }
 export function IconButton({ icon: Icon, title, onClick, menuItems, className = '', active }: IconBtnProps) {
@@ -130,15 +269,55 @@ export function SearchBar({ value, onChange, placeholder = 'Search...', onAdvanc
 
 // ── ViewModeSwitcher ──────────────────────────────────────
 export function ViewModeSwitcher({ value, currentMode, onChange }: { value?: string; currentMode?: string; onChange: (m: any) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
   const mode = value || currentMode || 'grid';
-  const modes = [{ id: 'grid', Icon: LayoutGrid, label: 'Grid' }, { id: 'list', Icon: List, label: 'List' }, { id: 'table', Icon: Table2, label: 'Table' }];
+  const modes = [{ id: 'grid', Icon: LayoutGrid, label: 'Grid View' }, { id: 'list', Icon: List, label: 'List View' }, { id: 'table', Icon: Table2, label: 'Table View' }];
+  const current = modes.find((item) => item.id === mode) || modes[0];
+
+  useEffect(() => {
+    if (!open) return;
+    const handleClick = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [open]);
+
   return (
-    <div className="flex items-center h-10 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden bg-white dark:bg-neutral-950">
-      {modes.map(({ id, Icon, label }) => (
-        <button key={id} onClick={() => onChange(id)} title={`${label} View`} className={`w-10 h-10 flex items-center justify-center transition-colors ${mode === id ? 'bg-primary-50 dark:bg-primary-950 text-primary-600 dark:text-primary-400' : 'text-neutral-500 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-900'}`}>
-          <Icon className="w-4 h-4" />
-        </button>
-      ))}
+    <div className="relative order-last" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        title="Change view"
+        aria-label="Change view"
+        className="flex h-10 w-10 items-center justify-center rounded-lg border border-neutral-200 bg-white text-neutral-600 transition-colors hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-400 dark:hover:bg-neutral-900"
+      >
+        <current.Icon className="h-4 w-4" />
+      </button>
+      {open ? (
+        <div className="absolute right-0 top-full z-[100] mt-2 w-40 overflow-hidden rounded-lg border border-neutral-200 bg-white py-1 shadow-lg dark:border-neutral-800 dark:bg-neutral-950">
+          {modes.map(({ id, Icon, label }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => {
+                onChange(id);
+                setOpen(false);
+              }}
+              className={`flex h-9 w-full items-center gap-2 px-3 text-left text-sm transition-colors ${
+                mode === id
+                  ? 'bg-primary-50 text-primary-600 dark:bg-primary-950 dark:text-primary-400'
+                  : 'text-neutral-700 hover:bg-neutral-50 dark:text-neutral-300 dark:hover:bg-neutral-900'
+              }`}
+            >
+              <Icon className="h-4 w-4 shrink-0" />
+              <span className="flex-1">{label}</span>
+              {mode === id ? <Check className="h-3.5 w-3.5" /> : null}
+            </button>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }

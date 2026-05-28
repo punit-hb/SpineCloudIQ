@@ -10,17 +10,16 @@ import {
   Download,
   Edit,
   Filter,
-  Grid3X3,
-  List,
+  Mail,
   MoreVertical,
   Plus,
   Printer,
   RefreshCw,
   Search,
   ShieldAlert,
-  Table2,
   Trash2,
   Upload,
+  User,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -35,7 +34,7 @@ import {
   FormSelect,
   StatusSlider,
 } from "../components/hb/common";
-import { PrimaryButton, SecondaryButton } from "../components/hb/listing";
+import { CardFooter, CardHeader, CardMetaRow, CardStatusPill, EnterpriseAvatar, EntityCard, PlainMetaLabel, PrimaryButton, SecondaryButton, ViewModeSwitcher } from "../components/hb/listing";
 
 interface Clinic {
   id: string;
@@ -151,78 +150,24 @@ function HeaderIconButton({
   );
 }
 
-function ViewModeSwitcher({
-  value,
-  onChange,
-}: {
-  value: ViewMode;
-  onChange: (value: ViewMode) => void;
-}) {
-  const options: Array<{ value: ViewMode; label: string; icon: ComponentType<{ className?: string }> }> = [
-    { value: "grid", label: "Grid View", icon: Grid3X3 },
-    { value: "list", label: "List View", icon: List },
-    { value: "table", label: "Table View", icon: Table2 },
-  ];
-
-  return (
-    <div className="inline-flex h-10 items-center gap-1 rounded-lg border border-neutral-200 bg-neutral-50 p-1 dark:border-neutral-800 dark:bg-neutral-900">
-      {options.map(({ value: optionValue, label, icon: Icon }) => (
-        <button
-          key={optionValue}
-          type="button"
-          title={label}
-          aria-label={label}
-          onClick={() => onChange(optionValue)}
-          className={`inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors ${
-            value === optionValue
-              ? "border border-neutral-200 bg-white text-primary shadow-sm dark:border-neutral-800 dark:bg-neutral-950"
-              : "text-neutral-500 hover:bg-white/70 hover:text-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-950"
-          }`}
-        >
-          <Icon className="h-4 w-4" />
-        </button>
-      ))}
-    </div>
-  );
-}
-
 function StatusBadge({ status }: { status: Clinic["status"] }) {
-  const config = {
-    active: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/20 dark:text-emerald-300",
-    suspended: "border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/20 dark:text-red-300",
-    inactive: "border-neutral-200 bg-neutral-100 text-neutral-700 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300",
-  }[status];
-  const dot = {
-    active: "bg-emerald-500",
-    suspended: "bg-red-500",
-    inactive: "bg-neutral-400",
-  }[status];
-
-  return (
-    <span className={`inline-flex h-6 items-center gap-1.5 rounded-full border px-2 text-xs font-medium capitalize ${config}`}>
-      <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
-      {status}
-    </span>
-  );
+  const tone = status === "active" ? "green" : status === "suspended" ? "red" : "gray";
+  return <CardStatusPill tone={tone}>{status}</CardStatusPill>;
 }
 
 function PlanBadge({ plan }: { plan: string }) {
-  return (
-    <span className="inline-flex h-6 items-center rounded-full border border-neutral-200 bg-neutral-50 px-2 text-xs font-medium text-neutral-700 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300">
-      {plan}
-    </span>
-  );
+  return <PlainMetaLabel>{plan}</PlainMetaLabel>;
 }
 
 function ClinicMark({ name }: { name: string }) {
   return (
-    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-xs font-semibold text-primary">
+    <EnterpriseAvatar>
       {name
         .split(" ")
         .map((word) => word[0])
         .join("")
         .slice(0, 2)}
-    </div>
+    </EnterpriseAvatar>
   );
 }
 
@@ -974,28 +919,19 @@ export default function ClinicManagementPage() {
           ) : null}
 
           {viewMode === "grid" ? (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div className="grid min-w-0 gap-4 md:grid-cols-2 xl:grid-cols-4">
               {currentData.map((clinic) => (
-                <div key={clinic.id} onClick={() => navigate(`/dashboard/clinics/${clinic.id}`)} className={`flex min-h-[236px] cursor-pointer flex-col rounded-lg border border-neutral-200 bg-white p-4 transition-colors hover:border-neutral-300 dark:border-neutral-800 dark:bg-neutral-950 dark:hover:border-neutral-700 ${selectedRowIds.includes(clinic.id) ? "ring-2 ring-primary/20" : ""}`}>
-                  <div className="mb-4 flex items-start justify-between gap-3">
-                    <div className="flex min-w-0 items-center gap-3">
-                      <ClinicMark name={clinic.name} />
-                      <div className="min-w-0">
-                        <h3 className="truncate text-base font-semibold text-neutral-950 dark:text-white">{clinic.name}</h3>
-                        <p className="font-mono text-sm text-neutral-500 dark:text-neutral-400">{clinic.id}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2" onClick={(event) => event.stopPropagation()}><input type="checkbox" checked={selectedRowIds.includes(clinic.id)} onChange={(event) => handleSelectRow(clinic.id, event.target.checked)} className="h-4 w-4 rounded border-neutral-300 accent-primary" />{renderActionsMenu(clinic)}</div>
+                <EntityCard key={clinic.id} selected={selectedRowIds.includes(clinic.id)} onClick={() => navigate(`/dashboard/clinics/${clinic.id}`)}>
+                  <CardHeader avatar={<ClinicMark name={clinic.name} />} title={clinic.name} subtitle={<span className="font-mono">{clinic.id}</span>} selected={selectedRowIds.includes(clinic.id)} onSelect={(checked) => handleSelectRow(clinic.id, checked)} actions={renderActionsMenu(clinic)} />
+                  <div className="flex-1 space-y-2 text-sm">
+                    <CardMetaRow icon={Mail}>{clinic.email}</CardMetaRow>
+                    <CardMetaRow icon={User}>{clinic.adminName}</CardMetaRow>
+                    <div className="flex items-center gap-2"><Building2 className="h-4 w-4 shrink-0 text-neutral-500" /><PlanBadge plan={clinic.planType} /></div>
                   </div>
-                  <div className="flex-1 grid gap-2.5 text-sm">
-                    <div className="flex items-center justify-between gap-3"><span className="text-neutral-500 dark:text-neutral-400">Plan</span><PlanBadge plan={clinic.planType} /></div>
-                    <div className="min-w-0"><span className="text-neutral-500 dark:text-neutral-400">Email</span><p className="truncate font-medium text-neutral-800 dark:text-neutral-200">{clinic.email}</p></div>
-                    <div className="min-w-0"><span className="text-neutral-500 dark:text-neutral-400">Admin</span><p className="truncate font-medium text-neutral-800 dark:text-neutral-200">{clinic.adminName}</p></div>
-                  </div>
-                  <div className="mt-4 flex min-h-10 items-center justify-between border-t border-neutral-100 pt-3 dark:border-neutral-800"><span className="text-sm text-neutral-500 dark:text-neutral-400">Status</span><StatusBadge status={clinic.status} /></div>
-                </div>
+                  <CardFooter><StatusBadge status={clinic.status} /></CardFooter>
+                </EntityCard>
               ))}
-              <div className="md:col-span-2 xl:col-span-4 overflow-hidden rounded-lg border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">{renderPagination()}</div>
+              <div className="min-w-0 md:col-span-2 xl:col-span-4 overflow-hidden rounded-lg border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">{renderPagination()}</div>
             </div>
           ) : null}
 

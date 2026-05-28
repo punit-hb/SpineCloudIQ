@@ -1,4 +1,5 @@
 import { type ComponentType, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router";
 import {
   BarChart3,
   Check,
@@ -8,20 +9,18 @@ import {
   Download,
   Edit,
   Filter,
-  Grid3X3,
-  List,
   MoreVertical,
   Plus,
   Printer,
   RefreshCw,
   Search,
   Shield,
-  Table2,
   Trash2,
   Upload,
   Users,
   X,
 } from "lucide-react";
+import { CardFooter, CardHeader, CardMetaRow, CardStatusPill, EnterpriseAvatar, EntityCard, OutlinePill, ViewModeSwitcher } from "../components/hb/listing";
 
 interface Permission {
   create: boolean;
@@ -175,55 +174,24 @@ function HeaderIconButton({ title, icon: Icon, active, badge, onClick }: { title
   );
 }
 
-function ViewModeSwitcher({ value, onChange }: { value: ViewMode; onChange: (value: ViewMode) => void }) {
-  const modes: Array<{ value: ViewMode; title: string; icon: ComponentType<{ className?: string }> }> = [
-    { value: "grid", title: "Grid View", icon: Grid3X3 },
-    { value: "list", title: "List View", icon: List },
-    { value: "table", title: "Table View", icon: Table2 },
-  ];
-  return (
-    <div className="inline-flex h-10 items-center gap-1 rounded-lg border border-neutral-200 bg-neutral-50 p-1 dark:border-neutral-800 dark:bg-neutral-900">
-      {modes.map(({ value: mode, title, icon: Icon }) => (
-        <button key={mode} type="button" title={title} onClick={() => onChange(mode)} className={`inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors ${value === mode ? "border border-neutral-200 bg-white text-primary shadow-sm dark:border-neutral-800 dark:bg-neutral-950" : "text-neutral-500 hover:bg-white dark:text-neutral-400 dark:hover:bg-neutral-950"}`}>
-          <Icon className="h-4 w-4" />
-        </button>
-      ))}
-    </div>
-  );
-}
-
 function StatusBadge({ status }: { status: Role["status"] }) {
-  const dot = status === "Active" ? "bg-emerald-500" : "bg-neutral-400";
-  return (
-    <span className="inline-flex h-6 items-center gap-1.5 rounded-full border border-neutral-200 bg-white px-2 text-xs font-medium text-neutral-700 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-300">
-      <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
-      {status}
-    </span>
-  );
+  return <CardStatusPill tone={status === "Active" ? "green" : "gray"}>{status}</CardStatusPill>;
 }
 
 function TypeBadge({ isSystem }: { isSystem: boolean }) {
-  return (
-    <span className={`inline-flex h-6 items-center rounded-full border px-2 text-xs font-medium ${isSystem ? "border-primary/20 bg-primary/5 text-primary" : "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/20 dark:text-amber-300"}`}>
-      {isSystem ? "System" : "Custom"}
-    </span>
-  );
+  return <OutlinePill className={isSystem ? "border-primary/20 bg-primary/5 text-primary" : "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900 dark:bg-amber-950/20 dark:text-amber-300"}>{isSystem ? "System" : "Custom"}</OutlinePill>;
 }
 
 function PermissionBadge({ count }: { count: number }) {
   return (
-    <span className="inline-flex h-6 items-center rounded-full border border-emerald-200 bg-emerald-50 px-2 text-xs font-medium text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/20 dark:text-emerald-300">
+    <OutlinePill className="border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/20 dark:text-emerald-300">
       {count} Active
-    </span>
+    </OutlinePill>
   );
 }
 
 function RoleMark() {
-  return (
-    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
-      <Shield className="h-4 w-4" />
-    </div>
-  );
+  return <EnterpriseAvatar icon={Shield} className="text-primary" />;
 }
 
 function ColumnPanel({ visibleColumns, onToggle, onClose }: { visibleColumns: Record<ColumnKey, boolean>; onToggle: (key: ColumnKey) => void; onClose: () => void }) {
@@ -338,6 +306,7 @@ function FilterPanel({
 }
 
 export default function RoleManagementPage() {
+  const navigate = useNavigate();
   const [roles, setRoles] = useState<Role[]>(mockRoles);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [showSummary, setShowSummary] = useState(false);
@@ -367,13 +336,6 @@ export default function RoleManagementPage() {
   const [sortField, setSortField] = useState<ColumnKey>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [currentPage, setCurrentPage] = useState(1);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [drawerMode, setDrawerMode] = useState<"add" | "edit">("add");
-  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
-  const [formName, setFormName] = useState("");
-  const [formDescription, setFormDescription] = useState("");
-  const [formStatus, setFormStatus] = useState<Role["status"]>("Active");
-  const [formPermissions, setFormPermissions] = useState<Role["permissions"]>(emptyPermissions);
 
   useEffect(() => {
     if (viewMode !== "table") setShowColumnPanel(false);
@@ -447,37 +409,12 @@ export default function RoleManagementPage() {
   };
 
   const handleAddRole = () => {
-    setDrawerMode("add");
-    setSelectedRole(null);
-    setFormName("");
-    setFormDescription("");
-    setFormStatus("Active");
-    setFormPermissions(JSON.parse(JSON.stringify(emptyPermissions)) as Role["permissions"]);
-    setIsDrawerOpen(true);
+    navigate("/dashboard/roles/create");
   };
 
   const handleEditRole = (role: Role) => {
-    setDrawerMode("edit");
-    setSelectedRole(role);
-    setFormName(role.name);
-    setFormDescription(role.description);
-    setFormStatus(role.status);
-    setFormPermissions(JSON.parse(JSON.stringify(role.permissions)) as Role["permissions"]);
-    setIsDrawerOpen(true);
+    navigate(`/dashboard/roles/${role.id}/edit`, { state: { role } });
     setActiveMenuRowId(null);
-  };
-
-  const handleSaveRole = () => {
-    if (!formName.trim()) {
-      alert("Please enter a role name");
-      return;
-    }
-    if (drawerMode === "add") {
-      setRoles([...roles, { id: `role_${Date.now()}`, name: formName, description: formDescription, userCount: 0, status: formStatus, permissions: formPermissions, createdAt: new Date().toISOString().split("T")[0], isSystem: false }]);
-    } else if (selectedRole) {
-      setRoles(roles.map((role) => (role.id === selectedRole.id ? { ...role, name: formName, description: formDescription, status: formStatus, permissions: formPermissions } : role)));
-    }
-    setIsDrawerOpen(false);
   };
 
   const handleDeleteRole = (roleId: string) => {
@@ -504,15 +441,6 @@ export default function RoleManagementPage() {
       setRoles(roles.filter((role) => !customIds.includes(role.id)));
       setSelectedRowIds([]);
     }
-  };
-
-  const handlePermissionChange = (module: PermissionModule, permission: keyof Permission, value: boolean) => {
-    setFormPermissions((current) => ({ ...current, [module]: { ...current[module], [permission]: value } }));
-  };
-
-  const handleSelectAllPermissions = (module: PermissionModule) => {
-    const allSelected = Object.values(formPermissions[module]).every(Boolean);
-    setFormPermissions((current) => ({ ...current, [module]: { create: !allSelected, read: !allSelected, update: !allSelected, delete: !allSelected } }));
   };
 
   const handleExport = () => alert(`Success: Exported ${filteredRoles.length} custom role setups to Excel.`);
@@ -674,7 +602,7 @@ export default function RoleManagementPage() {
                         <td className="px-4 py-3"><input type="checkbox" checked={selectedRowIds.includes(role.id)} onChange={(event) => toggleSelected(role.id, event.target.checked)} className="h-4 w-4 rounded border-neutral-300 accent-primary" /></td>
                         {visibleColumns.name ? <td className="px-4 py-3"><button type="button" onClick={() => handleEditRole(role)} className="flex items-center gap-3 text-left"><RoleMark /><span><span className="block text-sm font-semibold text-primary hover:underline">{role.name}</span>{role.isSystem ? <span className="text-[10px] font-semibold uppercase text-neutral-400">System profile</span> : null}</span></button></td> : null}
                         {visibleColumns.description ? <td className="max-w-xs truncate px-4 py-3 text-sm text-neutral-600 dark:text-neutral-400">{role.description}</td> : null}
-                        {visibleColumns.userCount ? <td className="px-4 py-3"><span className="inline-flex h-6 items-center rounded-full border border-primary/20 bg-primary/5 px-2 text-xs font-medium text-primary">{role.userCount} {role.userCount === 1 ? "User" : "Users"}</span></td> : null}
+                        {visibleColumns.userCount ? <td className="px-4 py-3"><OutlinePill className="border-primary/20 bg-primary/5 text-primary">{role.userCount} {role.userCount === 1 ? "User" : "Users"}</OutlinePill></td> : null}
                         {visibleColumns.permissions ? <td className="px-4 py-3"><PermissionBadge count={countPermissions(role.permissions)} /></td> : null}
                         {visibleColumns.status ? <td className="px-4 py-3"><StatusBadge status={role.status} /></td> : null}
                         {visibleColumns.createdAt ? <td className="px-4 py-3 font-mono text-sm text-neutral-600 dark:text-neutral-400">{formatDate(role.createdAt)}</td> : null}
@@ -690,18 +618,15 @@ export default function RoleManagementPage() {
           ) : null}
 
           {viewMode === "grid" ? (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div className="grid min-w-0 gap-4 md:grid-cols-2 xl:grid-cols-4">
               {currentData.map((role) => (
-                <div key={role.id} onClick={() => handleEditRole(role)} className={`flex min-h-[236px] cursor-pointer flex-col rounded-lg border border-neutral-200 bg-white p-4 hover:border-neutral-300 dark:border-neutral-800 dark:bg-neutral-950 ${selectedRowIds.includes(role.id) ? "ring-2 ring-primary/20" : ""}`}>
-                  <div className="mb-4 flex items-start justify-between gap-3">
-                    <div className="flex min-w-0 items-center gap-3"><RoleMark /><div className="min-w-0"><h3 className="truncate text-base font-semibold">{role.name}</h3><p className="truncate text-sm text-neutral-500">{role.description}</p></div></div>
-                    <div className="flex items-center gap-2" onClick={(event) => event.stopPropagation()}><input type="checkbox" checked={selectedRowIds.includes(role.id)} onChange={(event) => toggleSelected(role.id, event.target.checked)} className="h-4 w-4 rounded border-neutral-300 accent-primary" />{roleActions(role)}</div>
-                  </div>
-                  <div className="flex-1 grid gap-2.5 text-sm"><div className="flex justify-between"><span className="text-neutral-500">Type</span><TypeBadge isSystem={role.isSystem} /></div><div className="flex justify-between"><span className="text-neutral-500">Users</span><span className="font-medium">{role.userCount}</span></div><div className="flex justify-between"><span className="text-neutral-500">Permissions</span><PermissionBadge count={countPermissions(role.permissions)} /></div></div>
-                  <div className="mt-4 flex min-h-10 items-center justify-between border-t border-neutral-100 pt-3 dark:border-neutral-800"><span className="text-sm text-neutral-500">Status</span><StatusBadge status={role.status} /></div>
-                </div>
+                <EntityCard key={role.id} selected={selectedRowIds.includes(role.id)} onClick={() => handleEditRole(role)}>
+                  <CardHeader avatar={<RoleMark />} title={role.name} subtitle={role.description} selected={selectedRowIds.includes(role.id)} onSelect={(checked) => toggleSelected(role.id, checked)} actions={roleActions(role)} />
+                  <div className="flex-1 space-y-2 text-sm"><div className="flex items-center gap-2"><Shield className="h-4 w-4 shrink-0 text-neutral-500" /><TypeBadge isSystem={role.isSystem} /></div><CardMetaRow icon={Users}>{role.userCount} users</CardMetaRow><div className="flex items-center gap-2"><CheckCircle className="h-4 w-4 shrink-0 text-neutral-500" /><PermissionBadge count={countPermissions(role.permissions)} /></div></div>
+                  <CardFooter><StatusBadge status={role.status} /></CardFooter>
+                </EntityCard>
               ))}
-              <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white md:col-span-2 xl:col-span-4 dark:border-neutral-800 dark:bg-neutral-950">{renderPagination()}</div>
+              <div className="min-w-0 overflow-hidden rounded-lg border border-neutral-200 bg-white md:col-span-2 xl:col-span-4 dark:border-neutral-800 dark:bg-neutral-950">{renderPagination()}</div>
             </div>
           ) : null}
 
@@ -722,42 +647,6 @@ export default function RoleManagementPage() {
       )}
 
       {showFilterPanel ? <FilterPanel draftRows={draftRows} setDraftRows={setDraftRows} draftStatus={draftStatus} setDraftStatus={setDraftStatus} draftType={draftType} setDraftType={setDraftType} draftDateRange={draftDateRange} setDraftDateRange={setDraftDateRange} onClear={clearFilters} onCancel={() => setShowFilterPanel(false)} onApply={applyFilters} /> : null}
-
-      {isDrawerOpen ? (
-        <>
-          <div className="fixed inset-0 z-40 bg-black/40" onClick={() => setIsDrawerOpen(false)} />
-          <div className="fixed right-0 top-0 z-50 flex h-full w-full max-w-[640px] flex-col border-l border-neutral-200 bg-white shadow-xl dark:border-neutral-800 dark:bg-neutral-950">
-            <div className="flex items-start justify-between border-b border-neutral-100 p-5 dark:border-neutral-800">
-              <div><h2 className="text-lg font-semibold">{drawerMode === "add" ? "Create Custom Role" : "Edit Role Settings"}</h2><p className="mt-1 text-sm text-neutral-500">{drawerMode === "add" ? "Establish a new access profile and define module access limits." : "Update credentials and access levels for this profile."}</p></div>
-              <button type="button" onClick={() => setIsDrawerOpen(false)} className="rounded-md p-1 text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-900"><X className="h-5 w-5" /></button>
-            </div>
-            <div className="flex-1 space-y-5 overflow-y-auto p-5">
-              <div className="grid gap-4">
-                <label className="grid gap-1.5"><span className="text-xs font-semibold uppercase text-neutral-500">Role Name *</span><input value={formName} onChange={(event) => setFormName(event.target.value)} disabled={selectedRole?.isSystem} placeholder="e.g. Finance Auditor" className="h-10 rounded-lg border border-neutral-200 bg-white px-3 text-sm outline-none focus:border-primary disabled:opacity-50 dark:border-neutral-800 dark:bg-neutral-950" /></label>
-                <label className="grid gap-1.5"><span className="text-xs font-semibold uppercase text-neutral-500">Role Description</span><textarea value={formDescription} onChange={(event) => setFormDescription(event.target.value)} disabled={selectedRole?.isSystem} rows={3} placeholder="Summarize access targets and team roles..." className="rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-primary disabled:opacity-50 dark:border-neutral-800 dark:bg-neutral-950" /></label>
-                <label className="grid gap-1.5"><span className="text-xs font-semibold uppercase text-neutral-500">Profile Status</span><select value={formStatus} onChange={(event) => setFormStatus(event.target.value as Role["status"])} disabled={selectedRole?.isSystem} className="h-10 rounded-lg border border-neutral-200 bg-white px-3 text-sm outline-none focus:border-primary disabled:opacity-50 dark:border-neutral-800 dark:bg-neutral-950"><option value="Active">Active</option><option value="Inactive">Inactive</option></select></label>
-              </div>
-              <div>
-                <h3 className="mb-2 text-xs font-semibold uppercase text-neutral-500">Access Permissions Grid</h3>
-                <div className="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-800">
-                  <table className="w-full border-collapse">
-                    <thead className="bg-neutral-50 dark:bg-neutral-900"><tr><th className="border-b border-neutral-200 p-3 text-left text-sm font-semibold dark:border-neutral-800">Module</th>{["C", "R", "U", "D", "All"].map((label) => <th key={label} className="w-14 border-b border-neutral-200 p-3 text-center text-sm font-semibold dark:border-neutral-800">{label}</th>)}</tr></thead>
-                    <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                      {modules.map((module) => (
-                        <tr key={module.key} className="hover:bg-neutral-50 dark:hover:bg-neutral-900"><td className="p-3 text-xs font-semibold">{module.label}</td>{(["create", "read", "update", "delete"] as Array<keyof Permission>).map((permission) => <td key={permission} className="p-3 text-center"><input type="checkbox" checked={formPermissions[module.key][permission]} onChange={(event) => handlePermissionChange(module.key, permission, event.target.checked)} disabled={selectedRole?.isSystem} className="h-4 w-4 rounded border-neutral-300 accent-primary disabled:opacity-50" /></td>)}<td className="p-3 text-center"><button type="button" title="Toggle all for module" onClick={() => handleSelectAllPermissions(module.key)} disabled={selectedRole?.isSystem} className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 disabled:opacity-50 dark:hover:bg-neutral-900"><Check className="h-4 w-4" /></button></td></tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center justify-end gap-3 border-t border-neutral-100 p-5 dark:border-neutral-800">
-              <button type="button" onClick={() => setIsDrawerOpen(false)} className="h-10 rounded-lg border border-neutral-200 bg-white px-4 text-sm font-medium hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950">Cancel</button>
-              <button type="button" onClick={handleSaveRole} disabled={selectedRole?.isSystem} className="h-10 rounded-lg border border-primary bg-primary px-4 text-sm font-medium text-white hover:bg-primary/90 disabled:opacity-50">{drawerMode === "add" ? "Create Profile" : "Save Changes"}</button>
-            </div>
-          </div>
-        </>
-      ) : null}
     </div>
   );
 }

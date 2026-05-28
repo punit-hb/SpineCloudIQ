@@ -7,11 +7,14 @@ import {
   Columns3,
   Download,
   Filter,
+  Mail,
   Plus,
   RefreshCw,
   Search,
+  Users,
   X,
 } from "lucide-react";
+import { CardFooter, CardHeader, CardMetaRow, CardStatusPill, EnterpriseAvatar, EntityCard, PlainMetaLabel, ViewModeSwitcher } from "../../components/hb/listing";
 
 interface Subscription {
   id: string;
@@ -35,6 +38,7 @@ interface Subscription {
 
 type SortField = keyof Subscription;
 type SortOrder = "asc" | "desc" | null;
+type ViewMode = "grid" | "list" | "table";
 type ColumnKey =
   | "clinicName"
   | "ownerEmail"
@@ -96,24 +100,19 @@ function HeaderIconButton({ title, icon: Icon, active, badge, onClick }: { title
 }
 
 function DotBadge({ value }: { value: string }) {
-  const color = value === "Active" || value === "Paid" || value === "Yes" ? "bg-emerald-500" : value === "Grace Period" ? "bg-amber-500" : "bg-red-500";
-  return (
-    <span className="inline-flex h-6 items-center gap-1.5 rounded-full border border-neutral-200 bg-white px-2 text-xs font-medium text-neutral-700 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-300">
-      <span className={`h-1.5 w-1.5 rounded-full ${color}`} />
-      {value}
-    </span>
-  );
+  const tone = value === "Active" || value === "Paid" || value === "Yes" ? "green" : value === "Grace Period" ? "amber" : value === "Inactive" ? "gray" : "red";
+  return <CardStatusPill tone={tone}>{value}</CardStatusPill>;
 }
 
 function PlanBadge({ plan }: { plan: string }) {
-  return <span className="inline-flex h-6 items-center rounded-full border border-primary/20 bg-primary/5 px-2 text-xs font-medium text-primary">{plan}</span>;
+  return <PlainMetaLabel>{plan}</PlainMetaLabel>;
 }
 
 function ClinicMark({ name }: { name: string }) {
   return (
-    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-xs font-semibold text-primary">
+    <EnterpriseAvatar className="text-primary">
       {name.split(" ").map((part) => part[0]).join("").slice(0, 2)}
-    </div>
+    </EnterpriseAvatar>
   );
 }
 
@@ -199,6 +198,7 @@ function FilterPanel({
 }
 
 export default function SubscriptionReportPage() {
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [showSummary, setShowSummary] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [showColumnPanel, setShowColumnPanel] = useState(false);
@@ -382,10 +382,11 @@ export default function SubscriptionReportPage() {
           ) : (
             <HeaderIconButton title="Search" icon={Search} active={Boolean(searchQuery)} onClick={() => setIsSearchOpen(true)} />
           )}
-          <div className="relative">
+          <ViewModeSwitcher value={viewMode} onChange={(mode) => { setViewMode(mode); setCurrentPage(1); }} />
+          {viewMode === "table" ? <div className="relative">
             <HeaderIconButton title="Customized columns" icon={Columns3} active={showColumnPanel || visibleColumnCount < tableColumns.length} onClick={() => setShowColumnPanel((value) => !value)} />
             {showColumnPanel ? <ColumnPanel visibleColumns={visibleColumns} onToggle={toggleColumn} onClose={() => setShowColumnPanel(false)} /> : null}
-          </div>
+          </div> : null}
           <button type="button" onClick={handleExport} className="inline-flex h-10 items-center gap-2 rounded-lg border border-primary bg-primary px-4 text-sm font-medium text-white hover:bg-primary/90"><Download className="h-4 w-4" />Export Report</button>
           <HeaderIconButton title="Summary" icon={BarChart3} active={showSummary} onClick={() => setShowSummary((value) => !value)} />
           <HeaderIconButton title="Refresh" icon={RefreshCw} onClick={() => console.log("Subscription report refreshed")} />
@@ -418,6 +419,30 @@ export default function SubscriptionReportPage() {
       {filteredAndSortedData.length === 0 ? (
         <div className="rounded-lg border border-neutral-200 bg-white p-8 text-center dark:border-neutral-800 dark:bg-neutral-950"><Building2 className="mx-auto h-10 w-10 text-neutral-400" /><h3 className="mt-3 text-sm font-semibold">No subscriptions found</h3><p className="mt-1 text-sm text-neutral-500">Adjust search or filters to find matching subscription records.</p></div>
       ) : (
+        <>
+        {viewMode === "grid" ? (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {currentData.map((subscription) => (
+              <EntityCard key={subscription.id} selected={selectedRowIds.includes(subscription.id)}>
+                <CardHeader avatar={<ClinicMark name={subscription.clinicName} />} title={subscription.clinicName} subtitle={subscription.id} selected={selectedRowIds.includes(subscription.id)} onSelect={(checked) => toggleSelected(subscription.id, checked)} />
+                <div className="flex-1 space-y-2 text-sm">
+                  <CardMetaRow icon={Mail}>{subscription.ownerEmail}</CardMetaRow>
+                  <div className="flex items-center gap-2"><Building2 className="h-4 w-4 shrink-0 text-neutral-500" /><PlanBadge plan={subscription.planName} /></div>
+                  <CardMetaRow icon={Users}>{subscription.providersUsed} / {subscription.providersAllowed} providers</CardMetaRow>
+                  <CardMetaRow icon={Building2}>{subscription.billingCycle} billing</CardMetaRow>
+                </div>
+                <CardFooter className="justify-between"><span className="text-sm font-semibold text-neutral-900 dark:text-white">{currency(subscription.mrrValue)}</span><DotBadge value={subscription.subscriptionStatus} /></CardFooter>
+              </EntityCard>
+            ))}
+          </div>
+        ) : null}
+        {viewMode === "list" ? (
+          <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
+            <div className="divide-y divide-neutral-100 dark:divide-neutral-800">{currentData.map((subscription) => <div key={subscription.id} className={`flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between ${selectedRowIds.includes(subscription.id) ? "bg-primary/5" : ""}`}><div className="flex min-w-0 items-center gap-3"><input type="checkbox" checked={selectedRowIds.includes(subscription.id)} onChange={(event) => toggleSelected(subscription.id, event.target.checked)} className="h-4 w-4 rounded border-neutral-300 accent-primary" /><ClinicMark name={subscription.clinicName} /><div className="min-w-0"><p className="truncate text-sm font-semibold">{subscription.clinicName}</p><p className="truncate text-xs text-neutral-500">{subscription.ownerEmail}</p></div></div><div className="flex flex-wrap items-center gap-2 text-sm"><PlanBadge plan={subscription.planName} /><DotBadge value={subscription.subscriptionStatus} /><span className="font-semibold">{currency(subscription.mrrValue)}</span><span className="text-neutral-500">Expires {formatDate(subscription.expirationDate)}</span></div></div>)}</div>
+            {renderPagination()}
+          </div>
+        ) : null}
+        {viewMode === "table" ? (
         <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
           <div className="overflow-x-auto">
             <table className="min-w-full border-collapse text-left">
@@ -443,6 +468,9 @@ export default function SubscriptionReportPage() {
           </div>
           {renderPagination()}
         </div>
+        ) : null}
+        {viewMode === "grid" ? renderPagination() : null}
+        </>
       )}
 
     </div>

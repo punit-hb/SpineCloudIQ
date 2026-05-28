@@ -3,7 +3,10 @@ import {
   AlertCircle,
   ArrowUpDown,
   BarChart3,
+  Building2,
+  Calendar,
   Check,
+  CreditCard,
   Download,
   Eye,
   FileSpreadsheet,
@@ -17,6 +20,7 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
+import { CardFooter, CardHeader, CardMetaRow, CardStatusPill, EnterpriseAvatar, EntityCard, PlainMetaLabel, ViewModeSwitcher } from "../components/hb/listing";
 import { Button } from "../components/ui/button";
 import { Checkbox } from "../components/ui/checkbox";
 
@@ -144,27 +148,12 @@ const formatDate = (value: string) =>
 const currency = (value: number) => `$${value.toLocaleString()}`;
 
 function StatusBadge({ status }: { status: Transaction["status"] }) {
-  const dotClass = {
-    Success: "bg-emerald-500",
-    Failed: "bg-red-500",
-    Pending: "bg-amber-500",
-    Refunded: "bg-blue-500",
-  }[status];
-
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200 bg-white px-2 py-0.5 text-xs text-neutral-600 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-400">
-      <span className={`h-1.5 w-1.5 rounded-full ${dotClass}`} />
-      {status}
-    </span>
-  );
+  const tone = status === "Success" ? "green" : status === "Failed" ? "red" : status === "Pending" ? "amber" : "blue";
+  return <CardStatusPill tone={tone}>{status}</CardStatusPill>;
 }
 
 function PlanBadge({ planName }: { planName: string }) {
-  return (
-    <span className="inline-flex items-center rounded-full border border-neutral-200 bg-neutral-50 px-2 py-0.5 text-xs font-medium text-neutral-700 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300">
-      {planName}
-    </span>
-  );
+  return <PlainMetaLabel>{planName}</PlainMetaLabel>;
 }
 
 function HeaderIconButton({
@@ -516,7 +505,7 @@ export default function TransactionsPage() {
   const [showSummary, setShowSummary] = useState(true);
   const [selectedRowIds, setSelectedRowIds] = useState<string[]>([]);
   const [activeMenuRowId, setActiveMenuRowId] = useState<string | null>(null);
-  const [viewMode] = useState<ViewMode>("table");
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [showFilters, setShowFilters] = useState(false);
   const [showColumns, setShowColumns] = useState(false);
   const [showMoreMenu, setShowMoreMenu] = useState(false);
@@ -785,7 +774,7 @@ export default function TransactionsPage() {
         <div className="mb-6">
           <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <h1 className="mb-2 text-[32px] font-semibold leading-[40px] text-neutral-900 dark:text-white">
+              <h1 className="mb-2 text-2xl font-semibold leading-8 text-neutral-900 dark:text-white">
                 Transactions Log
               </h1>
               <p className="text-sm text-neutral-600 dark:text-neutral-400">
@@ -862,6 +851,8 @@ export default function TransactionsPage() {
                   />
                 </div>
               )}
+
+              <ViewModeSwitcher value={viewMode} onChange={(mode) => { setViewMode(mode); setCurrentPage(1); }} />
 
               <Button
                 onClick={handleBulkDownload}
@@ -961,68 +952,19 @@ export default function TransactionsPage() {
               ? currentData.map((transaction) => {
                   const selected = selectedRowIds.includes(transaction.id);
                   return (
-                    <div
-                      key={transaction.id}
-                      onClick={() => handleViewDetails(transaction)}
-                      className={`flex min-h-[236px] cursor-pointer flex-col rounded-lg border bg-white p-4 shadow-sm transition-colors hover:border-primary/60 dark:bg-neutral-950 ${
-                        selected ? "border-primary/50 bg-primary/5" : "border-neutral-200 dark:border-neutral-800"
-                      }`}
-                    >
-                      <div className="mb-4 flex items-start justify-between gap-3">
-                        <div className="flex min-w-0 items-start gap-3">
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-neutral-100 text-primary dark:bg-neutral-900">
-                            <Receipt className="h-5 w-5" />
-                          </div>
-                          <div className="min-w-0">
-                            <button
-                              type="button"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                handleViewDetails(transaction);
-                              }}
-                              className="truncate text-sm font-medium text-primary underline-offset-4 hover:underline"
-                            >
-                              {transaction.invoiceNumber}
-                            </button>
-                            <p className="mt-1 truncate text-sm font-medium text-neutral-900 dark:text-white">
-                              {transaction.clinicName}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2" onClick={(event) => event.stopPropagation()}>
-                          <input
-                            type="checkbox"
-                            checked={selected}
-                            onChange={(event) => handleSelectRow(transaction.id, event.target.checked)}
-                            className="h-4 w-4 cursor-pointer rounded border-neutral-300 accent-primary"
-                            title="Select"
-                          />
-                          {renderActions(transaction)}
-                        </div>
+                    <EntityCard key={transaction.id} selected={selected} onClick={() => handleViewDetails(transaction)}>
+                      <CardHeader avatar={<EnterpriseAvatar icon={Receipt} className="text-primary" />} title={transaction.invoiceNumber} subtitle={transaction.clinicName} selected={selected} onSelect={(checked) => handleSelectRow(transaction.id, checked)} actions={renderActions(transaction)} />
+                      <div className="flex-1 space-y-2 text-sm">
+                        <CardMetaRow icon={Building2}>{transaction.clinicName}</CardMetaRow>
+                        <div className="flex items-center gap-2"><CreditCard className="h-4 w-4 shrink-0 text-neutral-500" /><PlanBadge planName={transaction.planName} /></div>
+                        <CardMetaRow icon={Calendar}>{formatDate(transaction.transactionDate)}</CardMetaRow>
+                        <CardMetaRow icon={CreditCard}>{transaction.paymentMethod}</CardMetaRow>
                       </div>
-                      <div className="flex-1 space-y-2.5 text-sm">
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-neutral-500 dark:text-neutral-400">Plan</span>
-                          <PlanBadge planName={transaction.planName} />
-                        </div>
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-neutral-500 dark:text-neutral-400">Amount</span>
-                          <span className="font-semibold text-neutral-900 dark:text-white">{currency(transaction.amount)}</span>
-                        </div>
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-neutral-500 dark:text-neutral-400">Date</span>
-                          <span className="text-neutral-700 dark:text-neutral-300">{formatDate(transaction.transactionDate)}</span>
-                        </div>
-                        <div className="flex items-center justify-between gap-3">
-                          <span className="text-neutral-500 dark:text-neutral-400">Payment</span>
-                          <span className="text-xs text-neutral-500 dark:text-neutral-400">{transaction.paymentMethod}</span>
-                        </div>
-                      </div>
-                      <div className="mt-4 flex min-h-10 items-center justify-between border-t border-neutral-100 pt-3 dark:border-neutral-800">
-                        <span className="text-sm text-neutral-500 dark:text-neutral-400">Status</span>
+                      <CardFooter className="justify-between">
+                        <span className="text-sm font-semibold text-neutral-900 dark:text-white">{currency(transaction.amount)}</span>
                         <StatusBadge status={transaction.status} />
-                      </div>
-                    </div>
+                      </CardFooter>
+                    </EntityCard>
                   );
                 })
               : <div className="md:col-span-2 xl:col-span-4">{emptyState}</div>}

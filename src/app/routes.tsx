@@ -19,6 +19,7 @@ import EmailManagementPage from "./pages/EmailManagementPage";
 import EmailTemplateEditPage from "./pages/EmailTemplateEditPage";
 import TicketManagementPage from "./pages/TicketManagementPage";
 import RoleManagementPage from "./pages/RoleManagementPage";
+import RoleEditorPage from "./pages/RoleEditorPage";
 import UserManagementPage from "./pages/UserManagementPage";
 import ProfilePage from "./pages/ProfilePage";
 import NotificationsPage from "./pages/NotificationsPage";
@@ -94,6 +95,14 @@ export const router = createBrowserRouter([
       {
         path: "roles",
         Component: RoleManagementPage,
+      },
+      {
+        path: "roles/create",
+        Component: RoleEditorPage,
+      },
+      {
+        path: "roles/:roleId/edit",
+        Component: RoleEditorPage,
       },
       {
         path: "user-management",
